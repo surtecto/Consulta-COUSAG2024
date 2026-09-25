@@ -4197,9 +4197,9 @@ dl.glos dd{margin:2px 0 0 0}
 figure{margin:10px 0;page-break-inside:avoid}figure img{max-width:100%;border:1px solid #C9D1CB}figcaption{font-size:12px;color:#4A5A5E}
 .note{font-size:12.5px;color:#4A5A5E}
 ul li{margin:4px 0}
+${COVER_CSS}
 </style></head><body>
-<div class="head"><div class="s">Municipalidad de San Andrés de Giles · Dirección de Planeamiento y Obras Particulares · Consulta urbanística del ${today}</div>
-<h1 class="m">${esc(nomText(p.n))}</h1><div class="m">Partida ${esc(partidaFmt(p.p))}${p.c?" · CCA "+esc(p.c):""}</div></div>
+${coverHTML(p,f,c)}
 
 ${H("Parcela")}<table>${row("Superficie según base",fmt(p.s,2)+" m²")}${row("Tipo (ARBA)",p.t==="U"?"Urbano":p.t==="R"?"Rural":"—")}${row("Red cloacal",p.k?"Sí":"No")}${row("Agua corriente",p.a?"Sí":"No")}</table>
 
@@ -4491,6 +4491,146 @@ $("a-clear").onclick=()=>{ S.act=null; $("a-res").innerHTML=""; $("opt-act").dis
 $("map-uso").onchange=e=>{ S.mapUso=e.target.value; restyle(); };
 S.mapUso="C1a"; S.actCode="C1a";
 fillUsoSelects(); showDef();
+
+/* ============ Carátula del informe con recorte de plano ============ */
+const RE=6378137;
+const mx = lng => RE*lng*Math.PI/180;
+const my = lat => RE*Math.log(Math.tan(Math.PI/4+lat*Math.PI/360));
+function pbb(p){
+  if(p._bb) return p._bb;
+  let a=[180,90,-180,-90];
+  p.rings.forEach(pg=>pg.forEach(r=>r.forEach(([la,lo])=>{ if(lo<a[0])a[0]=lo; if(la<a[1])a[1]=la; if(lo>a[2])a[2]=lo; if(la>a[3])a[3]=la; })));
+  return p._bb=a;
+}
+function segLen(a,b){ // metros sobre el terreno
+  const la=(a[0]+b[0])/2*Math.PI/180, dx=(b[1]-a[1])*Math.PI/180*RE*Math.cos(la), dy=(b[0]-a[0])*Math.PI/180*RE;
+  return Math.hypot(dx,dy);
+}
+function niceScale(m){ const c=[5,10,20,25,50,100,200,250,500,1000,2000]; return c.reduce((b,x)=>Math.abs(x-m)<Math.abs(b-m)?x:b,c[0]); }
+/* opts: W,H (px), halfM (semiancho en metros), sat, edges, labels, dot */
+function mapSVG(p,o){
+  const W=o.W, H=o.H; const bb=pbb(p);
+  const clat=(bb[1]+bb[3])/2, clng=(bb[0]+bb[2])/2, k=1/Math.cos(clat*Math.PI/180);
+  const cx=mx(clng), cy=my(clat);
+  const half=o.halfM*k, s=W/(2*half); // px por metro mercator
+  const X=lng=>(mx(lng)-cx)*s+W/2, Y=lat=>H/2-(my(lat)-cy)*s;
+  const hLat=(H/2)/s/RE*180/Math.PI*Math.cos(clat*Math.PI/180), hLng=half/RE*180/Math.PI;
+  const vb=[clng-hLng*1.05,clat-hLat*1.1,clng+hLng*1.05,clat+hLat*1.1];
+  const vis=S.parcels.filter(q=>{const b=pbb(q); return b[2]>=vb[0]&&b[0]<=vb[2]&&b[3]>=vb[1]&&b[1]<=vb[3];});
+  const path=q=>q.rings.map(pg=>pg.map(r=>"M"+r.map(([la,lo])=>X(lo).toFixed(1)+","+Y(la).toFixed(1)).join("L")+"Z").join("")).join("");
+  let g="";
+  // fondo satelital (se carga al abrir el informe con conexión)
+  if(o.sat){
+    const span=2*half; let z=Math.floor(Math.log2(W*2*Math.PI*RE/(256*span))); z=Math.max(10,Math.min(19,z));
+    const n=2**z, tpx=2*Math.PI*RE/n; // metros mercator por tile
+    const x0=cx-W/2/s, x1=cx+W/2/s, y0=cy-H/2/s, y1=cy+H/2/s;
+    const tx0=Math.floor((x0+Math.PI*RE)/tpx), tx1=Math.floor((x1+Math.PI*RE)/tpx), ty0=Math.floor((Math.PI*RE-y1)/tpx), ty1=Math.floor((Math.PI*RE-y0)/tpx);
+    for(let tx=tx0;tx<=tx1;tx++) for(let ty=ty0;ty<=ty1;ty++){
+      const mxl=tx*tpx-Math.PI*RE, myt=Math.PI*RE-ty*tpx;
+      g+=`<image href="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${ty}/${tx}" x="${((mxl-cx)*s+W/2).toFixed(1)}" y="${(H/2-(myt-cy)*s).toFixed(1)}" width="${(tpx*s+.6).toFixed(1)}" height="${(tpx*s+.6).toFixed(1)}" preserveAspectRatio="none"/>`;
+    }
+  }
+  const fo=o.sat?.42:.78, st=o.sat?"rgba(255,255,255,.85)":"#FFFFFF";
+  vis.forEach(q=>{ if(q===p) return; g+=`<path d="${path(q)}" fill="${q.zi.col}" fill-opacity="${fo}" stroke="${st}" stroke-width="${o.thin?.35:.8}"/>`; });
+  // parcela consultada
+  const pp=path(p);
+  if(o.dot){
+    const c=[X(clng),Y(clat)];
+    g+=`<path d="${pp}" fill="#FFD24A" stroke="#10262C" stroke-width="1"/><circle cx="${c[0]}" cy="${c[1]}" r="11" fill="none" stroke="#10262C" stroke-width="2.5"/><circle cx="${c[0]}" cy="${c[1]}" r="11" fill="none" stroke="#FFD24A" stroke-width="1.2"/>`;
+  } else {
+    g+=`<path d="${pp}" fill="#FFD24A" fill-opacity=".38" stroke="#10262C" stroke-width="5" stroke-linejoin="round"/><path d="${pp}" fill="none" stroke="#FFD24A" stroke-width="2.6" stroke-linejoin="round"/>`;
+  }
+  // rótulos de zona
+  if(o.labels){
+    const best={}; vis.forEach(q=>{ if(!q.z) return; const b=pbb(q); const a=(b[2]-b[0])*(b[3]-b[1]); if(!best[q.z]||a>best[q.z].a) best[q.z]={q,a}; });
+    Object.entries(best).forEach(([z,{q}])=>{ const b=pbb(q); const x=X((b[0]+b[2])/2), y=Y((b[1]+b[3])/2); if(x<20||x>W-20||y<16||y>H-16) return;
+      g+=`<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="middle" font-family="Arial Narrow,Arial,sans-serif" font-weight="700" font-size="${o.dot?10:12}" fill="#10262C" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(z)}</text>`; });
+  }
+  // medidas de lados
+  if(o.edges){
+    const ring=p.rings[0][0]; const n=ring.length-1;
+    if(n<=16){ for(let i=0;i<n;i++){ const a=ring[i], b=ring[i+1]; const L=segLen(a,b); if(L<2.5) continue;
+      const x1=X(a[1]),y1=Y(a[0]),x2=X(b[1]),y2=Y(b[0]); const px=(x1+x2)/2, py=(y1+y2)/2; if(Math.hypot(x2-x1,y2-y1)<34) continue;
+      let ang=Math.atan2(y2-y1,x2-x1)*180/Math.PI; if(ang>90) ang-=180; if(ang<-90) ang+=180;
+      g+=`<text x="${px.toFixed(1)}" y="${py.toFixed(1)}" transform="rotate(${ang.toFixed(1)} ${px.toFixed(1)} ${py.toFixed(1)})" dy="-6" text-anchor="middle" font-family="Courier New,monospace" font-weight="700" font-size="12" fill="#10262C" stroke="#FFF7D6" stroke-width="3.5" paint-order="stroke">${fmt(L,2)} m</text>`; } }
+  }
+  // escala y norte
+  const sm=niceScale(o.halfM*0.45), spx=sm*s*k;
+  g+=`<g transform="translate(16,${H-18})"><rect x="-6" y="-20" width="${spx+56}" height="30" rx="3" fill="#fff" fill-opacity=".88"/><rect x="0" y="0" width="${spx/2}" height="5" fill="#10262C"/><rect x="${spx/2}" y="0" width="${spx/2}" height="5" fill="#fff" stroke="#10262C" stroke-width="1"/><text x="0" y="-5" font-family="Arial,sans-serif" font-size="10" fill="#10262C">0</text><text x="${spx}" y="-5" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" fill="#10262C">${sm>=1000?sm/1000+" km":sm+" m"}</text></g>`;
+  g+=`<g transform="translate(${W-30},34)"><circle r="18" fill="#fff" fill-opacity=".9"/><path d="M0,-13 L7,9 L0,4 L-7,9Z" fill="#10262C"/><text y="-19" dy="-2" text-anchor="middle" font-family="Arial,sans-serif" font-weight="700" font-size="11" fill="#10262C">N</text></g>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block;width:100%;height:auto;background:#E4E9E3"><defs><clipPath id="cl${o.id}"><rect width="${W}" height="${H}"/></clipPath></defs><g clip-path="url(#cl${o.id})">${g}</g></svg>`;
+}
+function coverHTML(p,f,c){
+  const zi=p.zi, today=new Date().toLocaleDateString("es-AR",{day:"numeric",month:"long",year:"numeric"}), it=itemOf(p.z);
+  const bb=pbb(p); const wM=segLen([bb[1],bb[0]],[bb[1],bb[2]]), hM=segLen([bb[1],bb[0]],[bb[3],bb[0]]);
+  const halfClose=Math.max(45,Math.max(wM,hM)*1.15);
+  const big=mapSVG(p,{W:760,H:520,halfM:halfClose,sat:true,edges:true,labels:true,id:1});
+  const loc=mapSVG(p,{W:300,H:300,halfM:Math.max(450,halfClose*6),sat:false,labels:true,dot:true,thin:true,id:2});
+  const kv=(k,v)=>`<div class="kv"><span>${k}</span><b>${v}</b></div>`;
+  const ind = f ? [ ["FOS",esc(f.fos||"—")],["FOT",esc(f.fot||"—")],["Densidad",esc((f.densidad_texto||f.densidad||"—").replace(/\s*·\s*/g," / "))],["Altura",esc(f.altura_max||"—")] ] : [];
+  const pers=[]; USOS.forEach(g=>g.items.forEach(([k])=>{ if(f && statusOf(f,k)==="P") pers.push(k); }));
+  return `<section class="cover">
+  <header class="cv-top">
+    <div><div class="cv-muni">Municipalidad de San Andrés de Giles</div><div class="cv-dir">Dirección de Planeamiento y Obras Particulares</div></div>
+    <div class="cv-date">Consulta urbanística<br><b>${today}</b></div>
+  </header>
+  <div class="cv-title">
+    <div class="cv-eyebrow">Código de Ordenamiento Urbano y Territorial · Partido 094</div>
+    <h1>${esc(nomText(p.n))}</h1>
+    <div class="cv-part">Partida inmobiliaria <b>${esc(partidaFmt(p.p))}</b>${p.c?`<span> · CCA ${esc(p.c)}</span>`:""}</div>
+  </div>
+  <div class="cv-zone" style="--zc:${zi.col}">
+    <div class="cv-zcode">${esc(p.z||"—")}</div>
+    <div><div class="cv-zname">${esc((f&&f.nombre)||zi.name)}</div><div class="cv-zarea">${esc(zi.areaLabel)}${it?` · ${esc(it.nombre)}`:""}</div></div>
+  </div>
+  <figure class="cv-map">${big}
+    <figcaption><span class="sw sel"></span> Parcela consultada, con la medida de sus lados según el parcelario · parcelas vecinas coloreadas por zona COU · imagen satelital Esri (se muestra al abrir el informe con conexión a internet)</figcaption>
+  </figure>
+  <div class="cv-row">
+    <figure class="cv-loc">${loc}<figcaption>Ubicación en el entorno</figcaption></figure>
+    <div class="cv-data">
+      <div class="cv-grid">
+        ${kv("Superficie",fmt(p.s,2)+" m²")}${kv("Tipo ARBA",p.t==="U"?"Urbano":p.t==="R"?"Rural":"—")}
+        ${kv("Red cloacal",p.k?"Sí":"No")}${kv("Agua corriente",p.a?"Sí":"No")}
+        ${ind.map(([a,b])=>kv(a,b)).join("")}
+        ${c&&c.cub!=null?kv("Sup. cubierta máx.",fmt(c.cub,1)+" m²"):""}${c&&c.ocup!=null?kv("Ocupación máx.",fmt(c.ocup,1)+" m²"):""}
+      </div>
+      ${pers.length?`<div class="cv-usos"><span>Usos permitidos en la zona</span>${pers.map(k=>`<i>${k}</i>`).join("")}</div>`:""}
+    </div>
+  </div>
+  <footer class="cv-foot">Documento informativo generado sobre el parcelario 2024 y el COU 2022–2024. No reemplaza el Certificado de Uso Conforme (art. 2.1) ni el visado de la Dirección de Planeamiento. Las medidas surgen de la geometría catastral simplificada y son aproximadas.</footer>
+</section>`;
+}
+const COVER_CSS=`
+.cover{page-break-after:always;break-after:page;display:flex;flex-direction:column;gap:14px;margin-bottom:40px}
+.cv-top{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #0E5A6E;padding-bottom:10px;font-family:"Arial Narrow",Arial,sans-serif}
+.cv-muni{font-size:17px;font-weight:700;color:#0E5A6E;letter-spacing:.02em}
+.cv-dir{font-size:13px;color:#4A5A5E;text-transform:uppercase;letter-spacing:.08em}
+.cv-date{text-align:right;font-size:12px;color:#4A5A5E;text-transform:uppercase;letter-spacing:.08em}.cv-date b{font-size:14px;color:#18262B;text-transform:none;letter-spacing:0}
+.cv-eyebrow{font-family:"Arial Narrow",Arial,sans-serif;font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:#7A888B}
+.cv-title h1{font-family:"Courier New",monospace;font-size:30px;line-height:1.15;margin:4px 0 4px;color:#10262C}
+.cv-part{font-family:"Courier New",monospace;font-size:14px;color:#33464B}.cv-part span{font-size:11.5px;color:#7A888B}
+.cv-zone{display:flex;gap:14px;align-items:center;border-left:10px solid var(--zc);background:#F3F5F2;padding:10px 14px}
+.cv-zcode{font-family:"Arial Narrow",Arial,sans-serif;font-weight:700;font-size:30px;color:#10262C;min-width:70px}
+.cv-zname{font-family:"Arial Narrow",Arial,sans-serif;font-weight:700;font-size:18px}
+.cv-zarea{font-size:13px;color:#4A5A5E}
+.cv-map{margin:0;border:1px solid #9FACA6}
+.cv-map figcaption,.cv-loc figcaption{font-family:"Arial Narrow",Arial,sans-serif;font-size:11.5px;color:#4A5A5E;padding:5px 8px;background:#F3F5F2}
+.cv-map .sw.sel{display:inline-block;width:10px;height:10px;background:#FFD24A;border:1.5px solid #10262C;vertical-align:-1px}
+.cv-row{display:grid;grid-template-columns:230px 1fr;gap:16px;align-items:start}
+.cv-loc{margin:0;border:1px solid #9FACA6}
+.cv-grid{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid #C9D1CB}
+.kv{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #C9D1CB;padding:5px 2px;font-size:13px}
+.kv span{font-family:"Arial Narrow",Arial,sans-serif;color:#4A5A5E;text-transform:uppercase;letter-spacing:.05em;font-size:11.5px;padding-top:2px}
+.kv b{font-family:"Courier New",monospace;text-align:right}
+.kv:nth-child(odd){padding-right:12px;border-right:1px solid #C9D1CB}.kv:nth-child(even){padding-left:12px}
+.cv-usos{margin-top:10px;display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.cv-usos span{font-family:"Arial Narrow",Arial,sans-serif;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:#4A5A5E;width:100%;margin-bottom:2px}
+.cv-usos i{font-style:normal;font-family:"Courier New",monospace;font-size:11.5px;font-weight:700;background:#DCEFE2;color:#2E7D4F;padding:1px 6px;border-radius:3px}
+.cv-foot{font-size:11px;color:#7A888B;border-top:1px solid #C9D1CB;padding-top:6px}
+@media (max-width:640px){.cv-row{grid-template-columns:1fr}.cv-title h1{font-size:22px}}
+@media print{body{margin:0 auto}.cover{min-height:255mm}}
+`;
 
 </script>
 
