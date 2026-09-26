@@ -44,7 +44,7 @@ body{background:var(--ground);color:var(--ink);font-family:var(--f-ui);font-size
 button,input,select,textarea{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
-.app{display:grid;grid-template-columns:minmax(360px,470px) 1fr;grid-template-rows:auto 1fr;height:100%;}
+.app{display:grid;grid-template-columns:minmax(300px,370px) 1fr;grid-template-rows:auto 1fr;height:100%;}
 header.bar{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:10px 20px;border-bottom:1px solid var(--line);background:var(--surface)}
 .brand{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
 .brand h1{font-size:19px;font-weight:700;letter-spacing:.01em;margin:0}
@@ -134,7 +134,7 @@ table.t th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:va
 .actions{display:flex;gap:8px;flex-wrap:wrap}
 
 /* map overlays */
-.legend{position:absolute;right:12px;bottom:26px;z-index:500;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px;max-height:calc(100% - 90px);overflow-y:auto;width:230px;box-shadow:0 2px 10px rgba(0,0,0,.12);display:flex;flex-direction:column;gap:6px}
+.legend{position:absolute;right:10px;bottom:24px;z-index:500;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:8px 8px 8px 10px;max-height:calc(100% - 110px);overflow-y:auto;width:230px;font-size:12px;box-shadow:0 2px 10px rgba(0,0,0,.12);display:flex;flex-direction:column;gap:6px}
 .legend .lg-list{display:flex;flex-direction:column}
 .legend button.lg{display:grid;grid-template-columns:14px 1fr auto;gap:7px;align-items:center;border:0;background:transparent;text-align:left;padding:3px 4px;border-radius:3px;cursor:pointer;font-size:12.5px}
 .legend button.lg:hover{background:var(--surface-2)}
@@ -144,8 +144,28 @@ table.t th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:va
 .map-top{position:absolute;left:54px;top:10px;right:12px;z-index:500;display:flex;gap:8px;flex-wrap:wrap;pointer-events:none}
 .map-top>*{pointer-events:auto}
 .map-top select{width:auto;max-width:100%}
+#map-zona{max-width:230px}
 .pill{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:5px 9px;font-size:12.5px;box-shadow:0 1px 4px rgba(0,0,0,.1)}
-.legend-toggle{display:none}
+.legend-toggle{display:inline-block}
+.legend.hide{display:none}
+.lg-x{position:sticky;top:0;align-self:flex-end;margin:-4px -4px -18px 0;border:0;background:var(--surface);color:var(--ink-2);font-size:16px;line-height:1;width:22px;height:22px;border-radius:3px;cursor:pointer;z-index:1}
+.lg-x:hover{background:var(--surface-2)}
+.legend button.lg{font-size:12px!important;padding:2px 3px!important}
+.app.nopanel{grid-template-columns:1fr}
+.app.nopanel aside.panel{display:none}
+.pill{font-size:12.5px!important}
+#pn-tg[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.main-tabs button{font-size:13px!important;padding:10px 6px!important}
+aside.panel .sec{padding:12px 16px}
+.interp{display:flex;flex-direction:column;gap:6px}
+.icard{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:start;text-align:left;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);padding:8px 10px;cursor:pointer;width:100%}
+.icard:hover{border-color:var(--accent)}
+.icard[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent);background:var(--accent-soft)}
+.icard b{font-family:var(--f-mono);font-size:13px}
+.icard .nm{font-weight:600;font-size:13.5px}
+.icard .why{grid-column:1/-1;font-size:12.5px;color:var(--ink-2);line-height:1.35}
+.icard .fit{font-size:11px;font-weight:700;padding:1px 6px;border-radius:3px;background:var(--ok-soft);color:var(--ok);white-space:nowrap}
+.icard .nofit{background:var(--warn-soft);color:var(--warn)}
 .main-tabs{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--line);background:var(--surface);position:sticky;top:0;z-index:5}
 .main-tabs button{border:0;background:transparent;padding:12px 10px;font-weight:600;font-size:14px;color:var(--ink-2);cursor:pointer;border-bottom:3px solid transparent;text-align:center}
 .main-tabs button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
@@ -211,9 +231,8 @@ dialog::backdrop{background:rgba(10,20,24,.45)}
   .app{display:flex;flex-direction:column;height:auto}
   aside.panel{border-right:0;overflow:visible;order:3}
   .map-wrap{order:2;height:58vh}
-  .legend{display:none;width:auto;left:12px}
-  .legend.open{display:flex}
-  .legend-toggle{display:inline-block}
+  .legend{width:auto;left:12px}
+  #pn-tg{display:none}
   .fgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media (max-width:460px){
@@ -283,12 +302,14 @@ dialog::backdrop{background:rgba(10,20,24,.45)}
       <section class="sec">
         <div class="eyebrow">Qué actividad querés instalar</div>
         <p class="prose muted" style="margin:0;font-size:14px">Elegí el tipo de uso del Código, indicá las superficies de tu proyecto y el plano marca las parcelas donde la zonificación lo admite.</p>
-        <label class="fld">Buscar actividad
-          <input type="text" id="a-q" placeholder="Ej.: taller mecánico, depósito, cabañas, gimnasio" autocomplete="off">
+        <label class="fld">Describí tu actividad con tus palabras
+          <input type="text" id="a-q" placeholder="Ej.: carpintería, venta de celulares, verdulería, gimnasio" autocomplete="off">
         </label>
-        <label class="fld">Tipo de uso (1.3.1.1)
-          <select id="a-uso" size="7"></select>
-        </label>
+        <div id="a-int" class="interp"></div>
+        <details class="norm" id="a-list"><summary>Elegir directamente de la lista de usos del Código</summary><div>
+          <input type="text" id="a-f" placeholder="Filtrar la lista" autocomplete="off" aria-label="Filtrar la lista de usos">
+          <select id="a-uso" size="7" aria-label="Tipo de uso"></select>
+        </div></details>
         <div id="a-def" class="prose muted" style="font-size:13.5px"></div>
       </section>
       <section class="sec">
@@ -322,6 +343,8 @@ dialog::backdrop{background:rgba(10,20,24,.45)}
   <div class="map-wrap">
     <div id="map" role="application" aria-label="Plano parcelario del Partido"></div>
     <div class="map-top">
+      <button class="pill" id="pn-tg" type="button" aria-pressed="false" title="Ocultar o mostrar el panel lateral">◧ Ocultar panel</button>
+      <select id="map-zona" class="pill" aria-label="Zona a visualizar"><option value="">Todas las zonas</option></select>
       <select id="map-mode" class="pill" aria-label="Colorear el plano por">
         <optgroup label="Zonificación">
           <option value="zona">Colorear por zona COU</option>
@@ -352,7 +375,7 @@ dialog::backdrop{background:rgba(10,20,24,.45)}
         <option value="none">Sin fondo</option>
       </select>
       <label class="pill op"><span>Relleno</span><input type="range" id="map-op" min="0" max="100" value="40" aria-label="Opacidad de las parcelas"></label>
-      <button class="pill legend-toggle" id="lg-tg" type="button">Referencias</button>
+      <button class="pill legend-toggle" id="lg-tg" type="button" aria-pressed="true">Referencias</button>
       <span class="pill" id="base-msg" hidden>El fondo no carga en esta vista. Usá el archivo HTML descargable para verlo.</span>
     </div>
     <div class="legend" id="legend"></div>
@@ -3846,7 +3869,7 @@ function styleFor(p){
   else if(S.mode==="cloaca") fill=p.k?"#2E8B57":"#C8573F";
   else if(S.mode==="agua") fill=p.a?"#2F7FB5":"#C8573F";
   else { const t=thematicStyle(p); if(t){ fill=t.fill; if(t.op!=null) op=Math.min(op,t.op); else op=Math.max(op,.55); } }
-  if(S.famFilter && p.zi.fam!==S.famFilter) op=Math.min(op,.06);
+  if(S.zoneSel){ if(!zoneMatch(p)) op=Math.min(op,.05); else op=Math.max(op,.8); }
   const sat = S.base!=="none";
   const line = sat ? "rgba(255,255,255,.75)" : (getComputedStyle(document.documentElement).getPropertyValue("--parcel-line").trim()||"rgba(0,0,0,.25)");
   return {color:line, weight:sat?.7:.5, fillColor:fill, fillOpacity:op};
@@ -3892,20 +3915,21 @@ function restyle(){ S.layers.forEach(l=>l.setStyle(styleFor(l._pp))); renderLege
 function renderLegend(){
   const el=$("legend"); let h="";
   const th=thematicLegend();
-  if(th){ el.innerHTML=th; return; }
+  const X=`<button type="button" class="lg-x" aria-label="Ocultar referencias" onclick="toggleLegend(false)">×</button>`;
+  if(th){ el.innerHTML=X+th; return; }
   if(S.mode==="zona"){
     const order=["CA","R1","R2","R3","R4","R5","R6","R7","DUE","EV","UE","DI","DIC","CRE","CRA","CM","CAgr","RU","PUN","RUN","SR","DBExt","RUR","RFR","ZIE","SIM","DBC","DDR","OTRO"];
     h+=`<div class="eyebrow">Zonas COU · tocá para resaltar</div><div class="lg-list">`;
     order.filter(f=>S.famCount[f]).forEach(f=>{
-      h+=`<button class="lg" type="button" data-f="${f}" aria-pressed="${S.famFilter===f}"><span class="sw" style="background:${FAM[f].col}"></span><span>${esc(f==="RUR"?"R · Rural":f==="RFR"?"RFR · Rural frente a ruta":f+" · "+FAM[f].n)}</span><span class="n">${S.famCount[f].toLocaleString("es-AR")}</span></button>`;
+      h+=`<button class="lg" type="button" data-f="${f}" aria-pressed="${S.zoneSel==='fam:'+f}"><span class="sw" style="background:${FAM[f].col}"></span><span>${esc(f==="RUR"?"R · Rural":f==="RFR"?"RFR · Rural frente a ruta":f+" · "+FAM[f].n.replace("Complementaria","Compl.").replace("Distrito","Dto.").replace(" (Localidades)",""))}</span><span class="n">${S.famCount[f].toLocaleString("es-AR")}</span></button>`;
     });
     h+=`</div>`;
   } else {
     const lab = S.mode==="cloaca"?["#2E8B57","Con red cloacal","#C8573F","Sin red cloacal"]:S.mode==="agua"?["#2F7FB5","Con agua corriente","#C8573F","Sin agua corriente"]:["#2E8B57","Ficha de zona cargada","#B9BFBD","Ficha pendiente"];
     h+=`<div class="eyebrow">Referencias</div><div class="lg-list"><div class="lg" style="display:flex;gap:7px;padding:3px 4px"><span class="sw" style="background:${lab[0]}"></span>${lab[1]}</div><div class="lg" style="display:flex;gap:7px;padding:3px 4px"><span class="sw" style="background:${lab[2]}"></span>${lab[3]}</div></div><span class="hint">Servicios según base catastral 2024.</span>`;
   }
-  el.innerHTML=h;
-  el.querySelectorAll("button.lg").forEach(b=>b.onclick=()=>{S.famFilter = S.famFilter===b.dataset.f?null:b.dataset.f; restyle();});
+  el.innerHTML=X+h;
+  el.querySelectorAll("button.lg").forEach(b=>b.onclick=()=>{ const v="fam:"+b.dataset.f; setZone(S.zoneSel===v?"":v, true); });
 }
 function highlight(p, fly){
   if(S.selLayer) S.selLayer.remove();
@@ -4253,20 +4277,152 @@ $("f-nom").onsubmit=e=>{e.preventDefault(); if(S.data) searchNom();};
 $("map-mode").onchange=e=>setMode(e.target.value);
 $("map-base").onchange=e=>{ const k=e.target.value; S.opacity = k==="none"?.75:.4; $("map-op").value=Math.round(S.opacity*100); setBase(k); };
 $("map-op").oninput=e=>{ S.opacity=+e.target.value/100; clearTimeout(S._opT); S._opT=setTimeout(restyle,60); };
-$("lg-tg").onclick=()=>$("legend").classList.toggle("open");
+$("lg-tg").onclick=()=>toggleLegend();
+function toggleLegend(v){ const el=$("legend"); const show = v==null ? el.classList.contains("hide") : v; el.classList.toggle("hide",!show); $("lg-tg").setAttribute("aria-pressed",show); }
+$("pn-tg").onclick=()=>{ const app=document.querySelector(".app"); const off=!app.classList.contains("nopanel"); app.classList.toggle("nopanel",off); $("pn-tg").setAttribute("aria-pressed",off); $("pn-tg").textContent=off?"◧ Mostrar panel":"◧ Ocultar panel"; setTimeout(()=>S.map&&S.map.invalidateSize(),60); };
+function zoneMatch(p){ const v=S.zoneSel; if(!v) return true; if(v.startsWith("fam:")) return p.zi.fam===v.slice(4); return p.z===v.slice(2); }
+function setZone(v,fly){
+  S.zoneSel=v; $("map-zona").value=v; restyle();
+  if(v && fly!==false && S.map){ let b=null; S.parcels.forEach(p=>{ if(zoneMatch(p)){ const bb=pbb(p); const lb=L.latLngBounds([bb[1],bb[0]],[bb[3],bb[2]]); b=b?b.extend(lb):lb; } }); if(b) S.map.flyToBounds(b,{padding:[30,30],maxZoom:17,duration:.6}); }
+}
+function fillZonaSelect(){
+  const order=["CA","R1","R2","R3","R4","R5","R6","R7","DUE","EV","UE","DI","DIC","CRE","CRA","CM","CAgr","RU","PUN","RUN","SR","DBExt","RUR","RFR","ZIE","SIM","DBC","DDR"];
+  const byF={}; S.parcels.forEach(p=>{ if(!p.z) return; (byF[p.zi.fam]=byF[p.zi.fam]||{}); byF[p.zi.fam][p.z]=(byF[p.zi.fam][p.z]||0)+1; });
+  const sortZ=(a,b)=>a.localeCompare(b,"es",{numeric:true});
+  $("map-zona").innerHTML=`<option value="">Todas las zonas</option>`+order.filter(f=>byF[f]).map(f=>{ const zs=Object.keys(byF[f]).sort(sortZ); const lab=f==="RUR"?"Rural":f==="RFR"?"Rural frente a ruta":FAM[f].n;
+    return `<optgroup label="${esc(lab)}">`+(zs.length>1?`<option value="fam:${f}">${esc(f==="RUR"?"R":f)} · todas (${zs.reduce((a,z)=>a+byF[f][z],0)})</option>`:"")+zs.map(z=>{ const fi=getFicha(z); return `<option value="z:${esc(z)}">${esc(z)}${fi&&fi.nombre&&zs.length>1?" · "+esc(fi.nombre.replace(/^.*?–\s*/,"")):""} (${byF[f][z]})</option>`; }).join("")+`</optgroup>`; }).join("");
+}
+$("map-zona").onchange=e=>setZone(e.target.value,true);
 try{ const mq=matchMedia("(prefers-color-scheme: dark)"); mq.addEventListener&&mq.addEventListener("change",()=>{ if(S.map){restyle(); if(S.sel) highlight(S.sel,false);} }); }catch(e){}
 
 (async()=>{
   try{
     await loadData();
     if(window.L) initMap(); else { $("loading").textContent="No se pudo cargar la librería del plano. La búsqueda funciona igual."; }
-    renderLegend();
+    renderLegend(); fillZonaSelect(); if(window.matchMedia("(max-width:900px)").matches) toggleLegend(false);
     const start=(S.byPart.get(6510)||[])[0]||S.parcels.find(p=>p.z==="CA")||S.parcels[0];
     $("in-part").value=String(start.p||"");
     selectParcel(start,true);
   }catch(err){ $("loading").textContent=err.message; }
   initDb();
 })();
+
+/* ============ Intérprete de actividades reales → tipos de uso del COU ============ */
+/* Cada entrada: palabras clave (sin acentos), usos candidatos y criterio de encuadre. */
+const ACTIV = [
+ // Residencial
+ {k:["vivienda","casa","casa familiar","vivienda unifamiliar","mi casa"],u:["VU"],r:"Vivienda del núcleo familiar."},
+ {k:["departamentos","departamento","edificio","duplex","propiedad horizontal","ph","viviendas agrupadas","complejo de viviendas","monoambientes"],u:["VM"],r:"Conjunto de viviendas en una parcela: vivienda multifamiliar (exige red cloacal)."},
+ {k:["club de campo","country"],u:["CC"],r:"Club de campo (Dto. 9404/86)."},
+ {k:["barrio cerrado","barrio privado"],u:["CC"],r:"Los barrios cerrados están prohibidos en el Partido (Dto. 27/98); la figura admitida es club de campo."},
+ // Comercio minorista
+ {k:["kiosco","kiosko","maxikiosco","almacen","despensa","verduleria","fruteria","verdura","frutas","carniceria","polleria","pescaderia","fiambreria","dietetica","libreria","jugueteria","regaleria","bazar","ropa","indumentaria","tienda","boutique","zapateria","calzado","celulares","celular","telefonia","accesorios de celular","electronica","computacion","informatica","optica","perfumeria","cosmetica","farmacia","herboristeria","merceria","joyeria","relojeria","cotillon","floreria","flores","articulos de limpieza","santeria","disqueria","polirrubro","venta de ropa","lenceria","deportes","articulos deportivos","anteojos","regalos","golosinas","panaderia venta","pañalera","panalera","mascotas","pet shop","forrajeria","alimento balanceado","vinoteca","bebidas","venta de bebidas","artesanias","libros","papeleria","cigarreria"],
+  u:["C1a","C1b","C1c"],r:"Comercio minorista: C1a hasta 100 m² sin depósito ni elaboración; C1b con depósito menor al 25 % del salón; C1c con depósito mayor al 25 % (venta hasta 500 m²)."},
+ {k:["muebleria","muebles","electrodomesticos","ferreteria","pintureria","sanitarios","materiales electricos","colchoneria","repuestos","autopartes","casa de repuestos","bicicletas venta","motos venta","agroveterinaria","veterinaria venta","vidrieria venta","aberturas venta","ceramicos","revestimientos","iluminacion","agropecuaria venta"],
+  u:["C1b","C1c","C1a"],r:"Comercio minorista con depósito: C1b si el depósito es menor al 25 % del salón; C1c si es mayor."},
+ {k:["autoservicio","minimercado","minimarket","supermercado","super","mercadito"],u:["C1c","C1b","C1d"],r:"Autoservicio: C1b/C1c según depósito (venta hasta 500 m²); grandes superficies (Ley 12.573) son C1d."},
+ {k:["hipermercado","gran superficie","shopping","centro comercial"],u:["C1d"],r:"Grandes superficies comerciales alcanzadas por la Ley 12.573."},
+ {k:["corralon","materiales de construccion","aridos","arena","piedra","ladrillos","venta de leña","leña","carbon","chatarreria","chatarra","reciclado","venta de postes","tranqueras"],u:["C1e"],r:"Comercio minorista de productos molestos o voluminosos (ej. corralones)."},
+ {k:["garrafas","gas envasado","agroquimicos venta","fertilizantes","venta de agroquimicos","pirotecnia","combustible envasado"],u:["C3","Dep2"],r:"Productos peligrosos: C3 para su comercialización mayorista; Dep2 para su guarda."},
+ {k:["mayorista","distribuidora","distribucion","venta por mayor","al por mayor"],u:["C2a","C2b","C2c"],r:"Comercio mayorista: C2a hasta 200 m²; C2b de 200 a 900 m²; C2c más de 900 m² (depósito en la parcela)."},
+ {k:["concesionaria","venta de autos","agencia de autos","compra venta de autos","automotores","venta de motos","usados"],u:["C4a","C4b"],r:"Venta de automotores livianos: C4a hasta 200 m² sin taller; C4b más de 200 m² con taller posventa."},
+ {k:["venta de camiones","maquinaria agricola","tractores","maquinaria vial","concesionaria de camiones"],u:["C4c"],r:"Venta de automotores pesados con taller posventa."},
+ {k:["cantera","tosca","tierra negra","extraccion de suelo","greda","horno de ladrillos","ladrillera","cava"],u:["C5"],r:"Extracción de suelos seleccionados: requiere informe ambiental, dictamen de la D.P. y aprobación del HCD."},
+ // Servicios
+ {k:["cajero","cajero automatico","financiera","prestamos","creditos","sucursal bancaria"],u:["S1a","S1b"],r:"Servicios financieros: S1a cajeros, créditos, sucursales; S1b bancos y agencias de cambio."},
+ {k:["banco","casa de cambio","agencia de cambio"],u:["S1b"],r:"Bancos, créditos, agencias de cambio."},
+ {k:["restaurante","restaurant","resto","parrilla","parrila","pizzeria","bar","cafe","cafeteria","confiteria","rotiseria","comida rapida","hamburgueseria","empanadas","heladeria","sandwicheria","cerveceria","comedor","bodegon","casa de comidas","viandas","delivery de comida","food truck","sushi","tenedor libre","buffet"],
+  u:["S2a","S2b"],r:"Gastronomía sin espectáculos: S2a menos de 100 m²; S2b más de 100 m² (en algunas zonas el límite es 70 m²)."},
+ {k:["panaderia","pasteleria","panificacion","facturas","confiteria artesanal","reposteria"],u:["S2a","S2b","Ind1"],r:"Elaboración y venta al por menor en el mismo local (S2a hasta 100 m², S2b más); si produce en serie para distribuir a otros comercios, puede encuadrarse como industria (Ley 11.459)."},
+ {k:["pub","bar con musica","musica en vivo","peña","pena","show en vivo","bar nocturno","karaoke","cerveceria con musica"],u:["S2c"],r:"Gastronomía con espectáculos en vivo en horario nocturno regulado."},
+ {k:["tintoreria","lavadero de ropa","lavanderia","lavarropas","cerrajeria","reparacion de calzado","zapatero","peluqueria","barberia","salon de belleza","manicura","depilacion","grafica","fotocopias","copias","quiniela","loteria","agencia de loteria","tatuajes","tattoo","vivero chico","modista","costura","arreglos de ropa","sastreria","service de celulares","reparacion de celulares","reparacion de computadoras","service de pc","reparacion de electrodomesticos","relojero","afilador","fotografia","estudio de fotografia","alquiler de vajilla","alquiler de disfraces","videoclub","locutorio","cyber","envios","correo privado","mensajeria","agencia de viajes","inmobiliaria chica"],
+  u:["S3"],r:"Servicios básicos de requerimiento diario (tintorería, peluquería, cerrajería, gráfica sin imprenta, lotería, tatuajes, vivero hasta 50 m²)."},
+ {k:["estacion de servicio","estacion de nafta","nafta","combustible","surtidor","gnc","gas natural comprimido","shop de estacion"],u:["S4"],r:"Venta de combustible con servicios asociados."},
+ {k:["carpinteria","carpinteria de muebles","herreria","metalurgica","imprenta","torneria","tornero","aberturas","fabrica de aberturas","tapiceria","tapiceria de muebles","marmoleria","vidrieria","soldadura","taller de soldadura","cerramientos","rejas","portones","taller de herreria","taller","taller de carpinteria","ebanisteria","serigrafia","sublimacion","bordados","estructuras metalicas","chapista de techos","zingueria"],
+  u:["S5a","S5b"],r:"Talleres generales de actividades no seriadas y horario diurno: S5a de 50 a 150 m² sin vehículos pesados; S5b más de 150 m²."},
+ {k:["gomeria","alineacion","balanceo","alineacion y balanceo","electricidad del automotor","electricista del automotor","audio car","polarizados","baterias","tapiceria de autos","tapiceria automotor","parabrisas","alarmas","cerrajeria del automotor","bicicleteria","reparacion de bicicletas","aire acondicionado del auto","gnc instalacion"],
+  u:["S6a"],r:"Talleres del automotor liviano de menor impacto."},
+ {k:["taller mecanico","mecanico","mecanica","chapa y pintura","chapista","pintura de autos","escapes","lubricentro","cambio de aceite","rectificadora","taller de motos","service de autos","inyeccion electronica","frenos","embragues"],
+  u:["S6b","S6c"],r:"Talleres del automotor liviano: S6b menos de 150 m²; S6c más de 150 m²."},
+ {k:["taller de camiones","mecanica pesada","taller de maquinaria","maquinaria agricola reparacion","taller de colectivos","taller de tractores"],u:["S6d"],r:"Talleres del automotor pesado."},
+ {k:["lavadero de autos","lavadero","lavado de autos","autolavado","lavacar","car wash"],u:["S6e","S6f"],r:"Lavadero de livianos en parcelas menores a 600 m² (S6e); de pesados en parcelas mayores a 600 m² (S6f)."},
+ {k:["lavadero de camiones","lavado de camiones","lavado de colectivos"],u:["S6f"],r:"Lavado de automotores pesados en parcelas mayores a 600 m²."},
+ {k:["remis","remiseria","agencia de remis","taxi","agencia de taxis","radio taxi","transporte de pasajeros","combis"],u:["S7"],r:"Remisería con estacionamiento de móviles propios (Ord. 57/93)."},
+ {k:["contratista rural","contratista","siembra servicio","cosecha servicio","fumigacion terrestre","fumigador","servicios agropecuarios","acopio chico","enfardado"],u:["S8a"],r:"Servicios a la actividad agropecuaria (contratistas, silos, fumigación terrestre)."},
+ {k:["fumigacion aerea","avioneta","pista de aterrizaje","aeroaplicador"],u:["S8b"],r:"Fumigación aérea con pista y depósitos."},
+ // Recreativo
+ {k:["centro cultural","museo","teatro","sala de teatro","sala de ensayo","estudio de grabacion","cineclub","biblioteca popular","galeria de arte","taller de arte","espacio cultural","milonga"],u:["Rec1a","Rec1b","Rec1c"],r:"Actividades culturales: Rec1a hasta 80 espectadores; Rec1b hasta 200; Rec1c medianas y grandes."},
+ {k:["cine","auditorio","anfiteatro"],u:["Rec1c"],r:"Actividad cultural mediana o grande."},
+ {k:["cancha de futbol","futbol 5","futbol cinco","canchas","cancha de padel","padel","paddle","tenis","cancha de tenis","club deportivo","polideportivo al aire libre","hockey","rugby","skate","pileta","natatorio al aire libre","camping"],u:["Rec2a","Rec2b"],r:"Deportes: Rec2a en espacios abiertos; Rec2b en espacios cubiertos, con menos de 200 espectadores."},
+ {k:["gimnasio","gym","crossfit","pilates","yoga","danza","escuela de danza","artes marciales","karate","boxeo","natatorio","pileta cubierta","polideportivo","padel techado","squash","spinning","funcional"],u:["Rec2b"],r:"Deportes en espacio cubierto (gimnasios, clubes, canchas)."},
+ {k:["estadio","hipodromo","autodromo","kartodromo","circuito","motocross","golf","cancha de golf","velodromo","predio de eventos masivos"],u:["Rec2c"],r:"Deportes especiales de gran superficie: requieren estudio de impacto, informe de la D.P. y aprobación del HCD."},
+ {k:["albergue transitorio","telo","hotel alojamiento","motel por hora"],u:["Rec3a"],r:"Hospedaje por horas sin registro."},
+ {k:["hotel","hostel","hosteria","apart","apart hotel","motel","posada"],u:["Rec3b","Rec3a"],r:"Hotelería con registro de pasajeros (hotel, motel, apart-hotel)."},
+ {k:["cabañas","cabanas","bungalows","bungalow","complejo de cabañas","glamping","tiny house turistica"],u:["Rec3c"],r:"Cabañas o bungalós con registro de pasajeros (unidades de al menos 40 m²)."},
+ {k:["turismo rural","estancia","casa de campo turistica","agroturismo","dia de campo","hospedaje rural","chacra turistica"],u:["Rec3d"],r:"Hotelería rural con características de nuestro campo."},
+ {k:["pension","residencia estudiantil","residencial","alquiler temporario mensual"],u:["Rec3e"],r:"Hospedaje por períodos quincenales o mensuales."},
+ {k:["salon de fiestas infantiles","fiestas infantiles","pelotero","inflables"],u:["Rec4a"],r:"Salón de fiestas con horario restringido durante el día."},
+ {k:["salon de fiestas","salon de eventos","eventos","quinta de eventos","casamientos","salon de usos multiples","sum para eventos"],u:["Rec4a","Rec4b"],r:"Salones de fiestas: Rec4a horario diurno; Rec4b horario extendido día y noche."},
+ {k:["boliche","disco","discoteca","bailanta","bailable","club nocturno","after"],u:["Rec5"],r:"Salones bailables de horario nocturno."},
+ // Depósitos
+ {k:["deposito","galpon","almacenamiento","guardado","guarda muebles","baulera","deposito de mercaderia","deposito de materiales"],u:["Dep1a","Dep1b","Dep1c","Dep1d"],r:"Depósito de productos inocuos: Dep1a hasta 100 m²; Dep1b hasta 300 m² en galpón existente; Dep1c hasta 300 m²; Dep1d más de 300 m²."},
+ {k:["deposito de agroquimicos","deposito de combustible","deposito de garrafas","productos peligrosos","deposito de fertilizantes","deposito de quimicos"],u:["Dep2"],r:"Depósito de elementos peligrosos o molestos (ordenanza de agroquímicos)."},
+ {k:["acopio","acopio de cereales","planta de silos","silos","granos","cerealera","planta de acopio"],u:["Dep3","S8a"],r:"Acopio y distribución a granel (Dep3); los silos de servicio agropecuario se encuadran en S8a."},
+ {k:["cochera","garage","garaje","estacionamiento","playa de estacionamiento","guarda de autos"],u:["Dep4a"],r:"Guarda y estacionamiento de vehículos livianos."},
+ {k:["playa de camiones","estacionamiento de camiones","guarda de camiones","guarda de colectivos","guarda de maquinaria"],u:["Dep4b"],r:"Guarda y estacionamiento de vehículos pesados."},
+ {k:["centro logistico","logistica","transporte de cargas","expreso","fletes","empresa de transporte","ruptura de cargas","centro de distribucion"],u:["Dep5"],r:"Logística y distribución con ruptura de cargas."},
+ // Administración
+ {k:["oficina","estudio contable","contador","abogado","estudio juridico","escribania","arquitectura","estudio de arquitectura","ingenieria","inmobiliaria","seguros","productor de seguros","consultora","gestoria","administracion de consorcios","agencia de publicidad","oficina comercial","coworking","call center"],u:["Adm1a","Adm1b"],r:"Oficinas privadas: Adm1a hasta 100 m²; Adm1b más de 100 m²."},
+ {k:["escuela publica","iglesia","templo","capilla","culto","parroquia","reparticion publica","oficina publica","policia","correo","registro civil","cooperativa de servicios","sede publica"],u:["Adm2"],r:"Sedes públicas, educación pública y culto."},
+ {k:["colegio privado","escuela privada","instituto","jardin maternal","jardin de infantes","guarderia infantil","universidad","terciario","academia","instituto de idiomas","escuela de manejo","apoyo escolar"],u:["Adm3"],r:"Educación privada de todos los niveles (informe de la D.P. y aprobación del HCD)."},
+ {k:["cementerio","cementerio parque","cementerio privado"],u:["Adm4a"],r:"Cementerio privado (Ord. Gral. 221/78)."},
+ {k:["cementerio de mascotas","crematorio de mascotas","crematorio"],u:["Adm4b"],r:"Cementerio y crematorio de mascotas."},
+ {k:["salita","centro de salud","caps","laboratorio","laboratorio de analisis","extracciones","vacunatorio","enfermeria"],u:["Adm5a"],r:"Atención primaria y laboratorios de análisis clínicos."},
+ {k:["consultorio","consultorio medico","medico","odontologo","odontologia","dentista","kinesiologia","kinesiologo","psicologo","psicologia","nutricionista","fonoaudiologia","podologia","centro medico","policonsultorio","fisioterapia","optometria"],u:["Adm5b","Adm5c"],r:"Consultorios de salud: Adm5b hasta 5 agrupados; Adm5c más de 5."},
+ {k:["diagnostico por imagenes","radiologia","rayos","ecografia","resonancia","tomografia","mamografia"],u:["Adm5d"],r:"Diagnóstico por imágenes."},
+ {k:["clinica","sanatorio","hospital","internacion","geriatrico","hogar de ancianos","residencia de adultos mayores","centro de rehabilitacion"],u:["Adm5e","Adm5f"],r:"Establecimientos con internación: Adm5e locales; Adm5f de escala regional."},
+ {k:["spa","centro de estetica","estetica corporal","masajes","cosmetologia","cama solar"],u:["Adm5g","S3"],r:"Estética y cuidado corporal sin cirugías (Adm5g); manicura o peluquería son S3."},
+ {k:["veterinaria","clinica veterinaria","veterinario"],u:["Adm6a","Adm6b","Adm6c"],r:"Veterinaria de animales pequeños (Adm6a); de animales grandes sin internación (Adm6b) o con internación (Adm6c)."},
+ {k:["veterinaria rural","veterinaria de grandes animales","equinos","caballos veterinaria"],u:["Adm6b","Adm6c"],r:"Atención de animales grandes."},
+ {k:["guarderia canina","hotel para perros","hotel de mascotas","pension canina","criadero de perros","refugio de animales"],u:["Adm7a","Adm7b"],r:"Guarda de mascotas: Adm7a hasta 10 animales; Adm7b más de 10."},
+ // Industria
+ {k:["fabrica","fabricacion","industria","planta industrial","elaboracion","produccion en serie","manufactura","fabrica de pastas","pastas frescas","chacinados","embutidos","frigorifico","fabrica de muebles","fabrica de alimentos","metalurgica industrial","textil","fabrica de ropa","confeccion","plasticos","quimica","curtiembre","cerveceria artesanal","elaboracion de cerveza","dulces","conservas","envasado","aserradero","hormigonera","bloques de hormigon","premoldeados"],
+  u:["Ind1","Ind2","Ind3"],r:"Actividad productiva en serie con depósito de materias primas y productos: la categoría 1ª, 2ª o 3ª surge de la precategorización de la Ley 11.459."},
+ // Agropecuario
+ {k:["tambo","cria de ganado","ganaderia","campo ganadero","vacas","vacunos","ovejas","caballos","haras","cabaña de animales","cria de caballos"],u:["GE1","GE2"],r:"Ganadería extensiva: GE1 pequeños productores; GE2 general (cabañas, haras, tambos)."},
+ {k:["feedlot","engorde a corral","criadero de cerdos","porcinos","chanchos","granja avicola","pollos","gallinas","ponedoras","apicultura","colmenas","cunicultura","conejos","criadero"],u:["GI1","GI2"],r:"Ganadería intensiva: GI1 pequeños productores; GI2 general."},
+ {k:["siembra","agricultura","soja","trigo","maiz","girasol","cultivo","campo agricola","forrajes","forestacion","monte","plantacion"],u:["AE1","AE2"],r:"Agricultura extensiva: AE1 en parcelas mayores a 30 ha; AE2 sin restricción de superficie."},
+ {k:["huerta","horticultura","vivero","plantas","frutales","invernadero","hidroponia","floricultura","aromaticas","frutillas"],u:["AI1","AI2"],r:"Agricultura intensiva: AI1 hasta 1 ha; AI2 general."}
+];
+const STOP=new Set(["de","del","la","el","los","las","un","una","y","o","en","con","para","por","a","al","mi","que","quiero","poner","instalar","abrir","hacer","local","negocio","emprendimiento","actividad","tipo","algo","sobre","es","se","venta","vender"]);
+const normTxt = s => String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9ñ ]+/g," ").replace(/\s+/g," ").trim();
+function interpretar(q, cub){
+  const nq=" "+normTxt(q)+" "; if(nq.trim().length<3) return [];
+  const toks=nq.trim().split(" ").filter(t=>t.length>=3 && !STOP.has(t));
+  const sc=new Map(); const add=(c,s,why)=>{ const o=sc.get(c)||{c,s:0,why:[]}; o.s+=s; if(why&&!o.why.includes(why)) o.why.push(why); sc.set(c,o); };
+  ACTIV.forEach(e=>{
+    let best=0, hit="";
+    e.k.forEach(k=>{ const nk=normTxt(k); if(nq.includes(" "+nk+" ")){ const v=20+nk.length*2; if(v>best){best=v;hit=k;} }
+      else { const kt=nk.split(" "); if(kt.length===1 && nk.length>=5 && toks.some(t=>t.length>=5 && (t.startsWith(nk.slice(0,Math.max(5,nk.length-2)))||nk.startsWith(t.slice(0,Math.max(5,t.length-2)))))){ const v=10+nk.length; if(v>best){best=v;hit=k;} } } });
+    if(best) e.u.forEach((c,i)=>add(c,best-i*2,`“${hit}”: ${e.r}`));
+  });
+  // coincidencia con la definición del Código
+  USOS.forEach(g=>g.items.forEach(([c,n,d])=>{
+    const nd=" "+normTxt(n+" "+d)+" "; let m=0; toks.forEach(t=>{ if(nd.includes(" "+t)) m+= t.length>=6?4:2; });
+    if(m) add(c,m,"Coincide con el texto de la definición del Código.");
+  }));
+  // patrones genéricos
+  if(/ venta /.test(nq) && ![...sc.keys()].some(c=>/^C/.test(c))) ["C1a","C1b","C1c"].forEach((c,i)=>add(c,8-i,"“venta de…”: comercio minorista (sin datos del rubro)."));
+  if(/ (fabrica|fabricacion|elaboracion|produccion) /.test(nq)) ["Ind1"].forEach(c=>add(c,6,"Producción o elaboración: posible industria (Ley 11.459)."));
+  if(/ reparacion /.test(nq) && !sc.size) add("S3",6,"Reparaciones de uso diario.");
+  let arr=[...sc.values()].sort((a,b)=>b.s-a.s);
+  if(!arr.length) return [];
+  const top=arr[0].s; arr=arr.filter(x=>x.s>=Math.max(6,top*0.35)).slice(0,6);
+  // ajuste por superficie
+  if(cub) arr.forEach(x=>{ const r=RANGO[x.c]; if(r){ x.fit = cub>=r[0]&&cub<=r[1]; if(x.fit) x.s+=15; else x.s-=10; } });
+  arr.sort((a,b)=>b.s-a.s);
+  return arr;
+}
 
 /* ============ Mapas temáticos y búsqueda de lugar para una actividad ============ */
 const RAMP = ["#FFF7BC","#D9F0A3","#ADDD8E","#78C679","#41AB5D","#238443","#005A32"];
@@ -4362,11 +4518,11 @@ function thematicLegend(){
   return null;
 }
 function setMode(m){
-  S.mode=m; S.famFilter=null; $("map-mode").value=m;
+  S.mode=m; $("map-mode").value=m;
   $("map-uso").hidden = m!=="uso";
   if(m.startsWith("ind:")) S.scale=buildScale(m.slice(4));
   restyle();
-  if(window.matchMedia("(max-width:900px)").matches) $("legend").classList.add("open");
+  toggleLegend(true);
 }
 
 /* ---- rangos de superficie de cada tipo de uso (definiciones 1.3.1.1) ---- */
@@ -4394,11 +4550,11 @@ function fillUsoSelects(){
   const opts=q=>USOS.map(g=>{const it=g.items.filter(([c,n,d])=>!q||(c+" "+n+" "+d).toLowerCase().includes(q)); return it.length?`<optgroup label="${g.g}">${it.map(([c,n])=>`<option value="${c}">${c} · ${esc(n)}</option>`).join("")}</optgroup>`:"";}).join("");
   $("map-uso").innerHTML=opts("");
   $("map-uso").value=S.mapUso;
-  const q=$("a-q").value.trim().toLowerCase(); $("a-uso").innerHTML=opts(q)||`<option disabled>Ninguna actividad coincide</option>`;
+  const q=$("a-f").value.trim().toLowerCase(); $("a-uso").innerHTML=opts(q)||`<option disabled>Ninguna actividad coincide</option>`;
   if(S.actCode && [...$("a-uso").options].some(o=>o.value===S.actCode)) $("a-uso").value=S.actCode;
 }
 function showDef(){
-  const c=$("a-uso").value; S.actCode=c||S.actCode; const u=USO_BY[c];
+  const c=$("a-uso").value||S.actCode; S.actCode=c; const u=USO_BY[c];
   $("a-def").innerHTML = u?`<b>${c} · ${esc(u.n)}</b><br>${esc(u.d)}`:"";
   checkWarn();
 }
@@ -4483,11 +4639,29 @@ function openFromAct(p){
 $("mt-consulta").onclick=()=>setMainTab("consulta");
 $("mt-act").onclick=()=>{ setMainTab("act"); if(S.act && S.mode!=="act") setMode("act"); };
 $("b-back").onclick=()=>{ setMainTab("act"); S.useQ=""; if(S.mode!=="act"&&S.act) setMode("act"); };
-$("a-q").oninput=()=>{ fillUsoSelects(); if(!$("a-uso").value && $("a-uso").options.length){ const o=[...$("a-uso").options].find(o=>!o.disabled); if(o){ $("a-uso").value=o.value; } } showDef(); };
-$("a-uso").onchange=showDef;
-$("a-cub").oninput=checkWarn;
+$("a-f").oninput=()=>{ fillUsoSelects(); };
+function renderInterp(){
+  const q=$("a-q").value, cub=num($("a-cub").value), el=$("a-int");
+  if(normTxt(q).length<3){ el.innerHTML=""; return; }
+  const r=interpretar(q,cub);
+  if(!r.length){ el.innerHTML=`<div class="msg">No reconozco esa actividad. Probá con otra palabra (por ejemplo el rubro: “taller”, “depósito”, “consultorio”) o elegila de la lista de usos del Código.</div>`; return; }
+  el.innerHTML=`<div class="hint">Según las definiciones del Código, tu actividad se encuadra en:</div>`+r.map((x,i)=>{const u=USO_BY[x.c]; const rg=RANGO[x.c];
+    return `<button type="button" class="icard" data-c="${x.c}" aria-pressed="${S.actCode===x.c}"><span><b>${x.c}</b> <span class="nm">${esc(u.n)}</span></span>${x.fit===true?`<span class="fit">acorde a la superficie</span>`:x.fit===false?`<span class="fit nofit">otra superficie</span>`:i===0?`<span class="fit">más probable</span>`:""}<span class="why">${i===0||x.why[0]!==r[0].why[0]?esc(x.why[0]||""):""}${rg?` <i>Rango: ${rg[1]===Infinity?"más de "+rg[0]:(rg[0]?rg[0]+" a ":"hasta ")+rg[1]} m².</i>`:""}</span></button>`;}).join("")+
+    `<div class="hint">Elegí el que corresponda. La interpretación es orientativa: la D.P. define el encuadre al otorgar el Certificado de Uso Conforme; los usos no previstos se tratan por el art. 2.3.</div>`;
+  el.querySelectorAll(".icard").forEach(b=>b.onclick=()=>{ selectCode(b.dataset.c); });
+  if(!S._userPicked || !r.some(x=>x.c===S.actCode)) selectCode(r[0].c,true);
+}
+function selectCode(c,auto){
+  S.actCode=c; if(!auto) S._userPicked=true;
+  if([...$("a-uso").options].some(o=>o.value===c)) $("a-uso").value=c; else { $("a-f").value=""; fillUsoSelects(); $("a-uso").value=c; }
+  $("a-int").querySelectorAll(".icard").forEach(b=>b.setAttribute("aria-pressed",b.dataset.c===c));
+  showDef();
+}
+let _iT; $("a-q").oninput=()=>{ S._userPicked=false; clearTimeout(_iT); _iT=setTimeout(renderInterp,180); };
+$("a-uso").onchange=()=>{ S._userPicked=true; showDef(); $("a-int").querySelectorAll(".icard").forEach(b=>b.setAttribute("aria-pressed",b.dataset.c===$("a-uso").value)); };
+$("a-cub").oninput=()=>{ checkWarn(); clearTimeout(_iT); _iT=setTimeout(renderInterp,250); };
 $("a-go").onclick=runAct;
-$("a-clear").onclick=()=>{ S.act=null; $("a-res").innerHTML=""; $("opt-act").disabled=true; ["a-cub","a-pb","a-tmin","a-tmax","a-q"].forEach(id=>$(id).value=""); fillUsoSelects(); setMode("zona"); };
+$("a-clear").onclick=()=>{ S.act=null; $("a-res").innerHTML=""; $("opt-act").disabled=true; ["a-cub","a-pb","a-tmin","a-tmax","a-q","a-f"].forEach(id=>$(id).value=""); $("a-int").innerHTML=""; S._userPicked=false; fillUsoSelects(); setMode("zona"); };
 $("map-uso").onchange=e=>{ S.mapUso=e.target.value; restyle(); };
 S.mapUso="C1a"; S.actCode="C1a";
 fillUsoSelects(); showDef();
