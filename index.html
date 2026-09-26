@@ -6,6 +6,9 @@
 </head>
 <body>
 <noscript><p style="padding:20px;font:16px system-ui">Esta consulta necesita JavaScript activado.</p></noscript>
+<script>
+window.addEventListener("error",function(e){if(e.target&&e.target.tagName&&e.target.tagName!=="SCRIPT")return;var d=document.getElementById("diag")||document.body.appendChild(Object.assign(document.createElement("div"),{id:"diag"}));d.style.cssText="position:fixed;left:10px;right:10px;bottom:10px;z-index:99999;background:#A83A2F;color:#fff;padding:10px 14px;font:14px system-ui;border-radius:6px";d.textContent="Error al cargar la página: "+(e.message||e.target&&e.target.src||"recurso no disponible")+(e.filename?" ("+e.filename.split("/").pop()+":"+e.lineno+")":"");},true);
+</script>
 <title>Consulta Urbanística Giles</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
@@ -132,6 +135,18 @@ table.t{border-collapse:collapse;width:100%;font-size:13px}
 table.t td,table.t th{border-top:1px solid var(--line);padding:5px 6px;text-align:left;vertical-align:top}
 table.t th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
 .actions{display:flex;gap:8px;flex-wrap:wrap}
+.vf-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px}
+.vf-grid label{display:flex;flex-direction:column;gap:3px;font-size:12.5px;font-weight:600;color:var(--ink-2)}
+.vf-grid label.wide{grid-column:1/-1}
+.vf-grid input,.vf-grid select{font:inherit;font-weight:400;color:var(--ink);padding:6px 8px;border:1px solid var(--line-strong);border-radius:4px;background:var(--surface);min-width:0}
+.vf-verdict{margin:12px 0 6px;padding:8px 10px;border-radius:4px;font-weight:700}
+.vf-verdict.ok{background:var(--ok-soft);color:var(--ok)}.vf-verdict.warn{background:var(--warn-soft);color:var(--warn)}.vf-verdict.bad{background:var(--bad-soft);color:var(--bad)}
+.vf-s{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;font-weight:700;font-size:12px;color:#fff}
+.vf-s.ok{background:var(--ok)}.vf-s.warn{background:var(--warn)}.vf-s.bad{background:var(--bad)}
+.vf-l{list-style:none;margin:0;padding:0}
+.vf-l li{display:grid;grid-template-columns:24px 1fr;gap:8px;padding:8px 0;border-top:1px solid var(--line)}
+.vf-n{display:flex;flex-wrap:wrap;gap:2px 14px;font-size:12.5px;color:var(--ink-2);margin:2px 0}
+.vf-n b{font-family:var(--f-mono);font-weight:500;color:var(--ink)}
 
 /* map overlays */
 .legend{position:absolute;right:10px;bottom:24px;z-index:500;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:8px 8px 8px 10px;max-height:calc(100% - 110px);overflow-y:auto;width:230px;font-size:12px;box-shadow:0 2px 10px rgba(0,0,0,.12);display:flex;flex-direction:column;gap:6px}
@@ -344,6 +359,7 @@ dialog::backdrop{background:rgba(10,20,24,.45)}
     <div id="map" role="application" aria-label="Plano parcelario del Partido"></div>
     <div class="map-top">
       <button class="pill" id="pn-tg" type="button" aria-pressed="false" title="Ocultar o mostrar el panel lateral">◧ Ocultar panel</button>
+      <button class="pill" id="geo-b" type="button" hidden title="Ubicar la parcela donde estás">◎ Mi ubicación</button>
       <select id="map-zona" class="pill" aria-label="Zona a visualizar"><option value="">Todas las zonas</option></select>
       <select id="map-mode" class="pill" aria-label="Colorear el plano por">
         <optgroup label="Zonificación">
@@ -385,9 +401,6 @@ dialog::backdrop{background:rgba(10,20,24,.45)}
 
 <div class="toast" id="toast" hidden></div>
 
-<script>
-window.addEventListener("error",function(e){if(e.target&&e.target.tagName&&e.target.tagName!=="SCRIPT")return;var d=document.getElementById("diag")||document.body.appendChild(Object.assign(document.createElement("div"),{id:"diag"}));d.style.cssText="position:fixed;left:10px;right:10px;bottom:10px;z-index:99999;background:#A83A2F;color:#fff;padding:10px 14px;font:14px system-ui;border-radius:6px";d.textContent="Error al cargar la página: "+(e.message||e.target&&e.target.src||"recurso no disponible")+(e.filename?" ("+e.filename.split("/").pop()+":"+e.lineno+")":"");},true);
-</script>
 <script src="parcelas.js" onerror="this.onerror=null;document.body.insertAdjacentHTML('beforeend','<div style=&quot;position:fixed;inset:auto 10px 10px;background:#A83A2F;color:#fff;padding:10px;font:14px system-ui;border-radius:6px;z-index:99999&quot;>No se encontró parcelas.js: subilo a la misma carpeta que index.html.</div>')"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 <script>
@@ -400,7 +413,7 @@ if(!window.claude){
   const write=d=>{try{localStorage.setItem(KEY,JSON.stringify(d));}catch(e){throw {code:"quota_exceeded"};} emit();};
   const db={collection:()=>({onSnapshot:(fn)=>{listeners.push(fn);setTimeout(()=>fn({docs:Object.entries(read()).map(([id,v])=>({id,exists:true,data:()=>v}))}),0);return()=>{};}}),
     doc:(path)=>{const id=path.split("/")[1];return{set:async v=>{const d=read();d[id]=v;write(d);},delete:async()=>{const d=read();delete d[id];write(d);}};}};
-  const downloads={save:async({filename,data})=>{const b=new Blob([data],{type:filename.endsWith(".csv")?"text/csv":"text/html"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=filename;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);}};
+  const downloads={save:async({filename,data})=>{const b=new Blob([data],{type:filename.endsWith(".csv")?"text/csv":filename.endsWith(".pdf")?"application/pdf":"text/html"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=filename;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);}};
   const user={canEdit:async()=>true};
   window.claude={use:async n=>({db,downloads,user})[n]||null};
 }
@@ -3994,10 +4007,10 @@ async function initDb(){
 function updateFichaStatus(){
   $("st-fichas").textContent = `${Object.keys(FICHAS_COU).length} del COU`;
 }
-function rerender(){ if(S.sel) renderInforme(S.sel); }
+function rerender(){ if(S.sel) renderInforme(S.sel); if(S.act&&typeof renderActResults==="function") renderActResults(); }
 
 /* ============ Informe ============ */
-function selectParcel(p,fly){ S.sel=p; highlight(p,fly); renderInforme(p);
+function selectParcel(p,fly){ S.sel=p; highlight(p,fly); renderInforme(p); if(typeof syncHash==="function"&&!S._booting) syncHash("p");
   if(window.matchMedia("(max-width:900px)").matches && !fly){ $("informe").scrollIntoView({behavior:"smooth",block:"start"}); } }
 
 function calc(p,f){
@@ -4055,7 +4068,9 @@ function renderInforme(p){
     </dl>
     <div class="actions">
       <button class="btn small" type="button" id="b-copy">Copiar nomenclatura</button>
-      ${S.downloads?`<button class="btn small" type="button" id="b-dl">Descargar informe</button>`:""}
+      ${S.downloads?`<button class="btn small primary" type="button" id="b-dl">Descargar informe</button>`:""}
+      ${canPrint()?`<button class="btn small" type="button" id="b-pr">Imprimir / PDF</button>`:""}
+      ${typeof shareURL==="function"&&shareURL()?`<button class="btn small" type="button" id="b-lk">Copiar enlace</button>`:""}
     </div>
   </section>`;
 
@@ -4130,6 +4145,9 @@ function renderInforme(p){
   renderUses(f);
   $("b-copy").onclick=()=>copyText(nomText(p.n)+" · Partida "+partidaFmt(p.p));
   if($("b-dl")) $("b-dl").onclick=()=>downloadInforme(p,f,c);
+  if($("b-pr")) $("b-pr").onclick=()=>printInforme(p,f,c);
+  if($("b-lk")) $("b-lk").onclick=()=>copyText(shareURL("p"));
+  if(typeof renderVerif==="function") renderVerif(p,f,c);
   el.querySelectorAll("[data-uf]").forEach(b=>b.onclick=()=>{renderInforme._touched=true; S.useFilter=b.dataset.uf; el.querySelectorAll("[data-uf]").forEach(x=>x.setAttribute("aria-pressed",x===b)); renderUses(f);});
   $("u-q").oninput=e=>{S.useQ=e.target.value; renderUses(f);};
   $("u-def").onchange=e=>{S.showDefs=e.target.checked; renderUses(f);};
@@ -4222,7 +4240,11 @@ figure{margin:10px 0;page-break-inside:avoid}figure img{max-width:100%;border:1p
 .note{font-size:12.5px;color:#4A5A5E}
 ul li{margin:4px 0}
 ${COVER_CSS}
+.noprint{position:sticky;top:0;z-index:5;display:flex;justify-content:flex-end;padding:8px 0;background:linear-gradient(#fff 70%,rgba(255,255,255,0))}
+.noprint button{font:600 14px "Arial Narrow",Arial,sans-serif;background:#0E5A6E;color:#fff;border:0;border-radius:4px;padding:8px 14px;cursor:pointer}
+@media print{.noprint{display:none}}
 </style></head><body>
+<div class="noprint"><button type="button" onclick="window.print()">Imprimir / Guardar como PDF</button></div>
 ${coverHTML(p,f,c)}
 
 ${H("Parcela")}<table>${row("Superficie según base",fmt(p.s,2)+" m²")}${row("Tipo (ARBA)",p.t==="U"?"Urbano":p.t==="R"?"Rural":"—")}${row("Red cloacal",p.k?"Sí":"No")}${row("Agua corriente",p.a?"Sí":"No")}</table>
@@ -4243,6 +4265,7 @@ ${f.superficie_texto?`<p class="s">Superficie de la zona: ${esc(f.superficie_tex
 <h3>Qué significa cada indicador</h3>${indicExplainHTML()}
 
 ${A?H("Observaciones sobre la parcela")+`<ul>${A}</ul>`:""}
+${(()=>{const v=typeof verifInformeHTML==="function"?verifInformeHTML(p,f,c):""; return v?H("Verificación preliminar del proyecto")+v:"";})()}
 
 ${H("Usos del suelo")}
 <p class="s">● permitido · ◐ condicionado (informe favorable de la D.P. y convalidación del HCD) · ◉ complementario (sólo junto a un uso permitido ya instalado en la parcela) · ✕ no permitido. La nota junto a un uso transcribe el límite que fija la ficha. Definiciones: texto del Código, 1.3.1.1.</p>
@@ -4257,6 +4280,13 @@ ${H("Glosario")}${glosarioHTML()}
 
 <p class="s" style="margin-top:30px;border-top:1px solid #C9D1CB;padding-top:8px">Consulta informativa sobre el parcelario 2024 y el Código de Ordenamiento Urbano y Territorial de San Andrés de Giles (texto completo 2022–2024). No reemplaza el Certificado de Uso Conforme (art. 2.1) ni el visado de la Dirección de Planeamiento.</p>
 </body></html>`;
+}
+function canPrint(){ try{ return window.top===window && typeof window.print==="function"; }catch(e){ return false; } }
+function printInforme(p,f,c){
+  const fr=document.createElement("iframe"); fr.setAttribute("aria-hidden","true"); fr.style.cssText="position:fixed;right:0;bottom:0;width:0;height:0;border:0";
+  document.body.appendChild(fr); toast("Preparando la impresión…");
+  fr.onload=()=>setTimeout(()=>{ try{ fr.contentWindow.focus(); fr.contentWindow.print(); }catch(e){ toast("El navegador no permite imprimir desde aquí: descargá el informe y usá su botón Imprimir."); } setTimeout(()=>fr.remove(),60000); },400);
+  fr.srcdoc=informeHTML(p,f,c);
 }
 async function downloadInforme(p,f,c){
   if(!S.downloads) return;
@@ -4300,9 +4330,12 @@ try{ const mq=matchMedia("(prefers-color-scheme: dark)"); mq.addEventListener&&m
     await loadData();
     if(window.L) initMap(); else { $("loading").textContent="No se pudo cargar la librería del plano. La búsqueda funciona igual."; }
     renderLegend(); fillZonaSelect(); if(window.matchMedia("(max-width:900px)").matches) toggleLegend(false);
+    S._booting=true;
     const start=(S.byPart.get(6510)||[])[0]||S.parcels.find(p=>p.z==="CA")||S.parcels[0];
     $("in-part").value=String(start.p||"");
     selectParcel(start,true);
+    S._booting=false;
+    if(typeof applyHash==="function") applyHash();
   }catch(err){ $("loading").textContent=err.message; }
   initDb();
 })();
@@ -4588,6 +4621,7 @@ function runAct(){
   });
   S.act={code,cub,pb,tmin,tmax,res,motivos,incC,incS,incX};
   $("opt-act").disabled=false; setMode("act"); renderActResults();
+  if(typeof syncHash==="function") syncHash("act");
   const rs=$("a-res"); if(rs) rs.scrollIntoView({behavior:"smooth",block:"start"});
   const pts=[...res.keys()].map(i=>S.parcels[i]);
   if(pts.length && S.map){ let b=null; pts.forEach(p=>{ const bb=L.latLngBounds(p.rings.flat(2)); b=b?b.extend(bb):bb; }); S.map.flyToBounds(b,{padding:[40,40],maxZoom:17,duration:.6}); }
@@ -4611,7 +4645,7 @@ function renderActResults(){
     </tbody></table>
     <div class="eyebrow">Parcelas (${Math.min(150,list.length)} de ${list.length.toLocaleString("es-AR")}, de mayor a menor superficie)</div>
     <div class="plist">${list.slice(0,150).map(({p,r})=>`<button type="button" data-i="${p.i}"><span class="sw" style="background:${ACT_COL[r.s]}"></span><span class="mono">${esc(nomText(p.n))}</span><span class="mono" style="color:var(--ink-3)">${esc(p.z)} · ${fmtSup(p.s)}</span></button>`).join("")}</div>
-    ${S.downloads?`<button class="btn small" type="button" id="a-csv">Descargar listado (.csv)</button>`:""}`:""}
+    ${S.downloads?`<div class="actions"><button class="btn small primary" type="button" id="a-pdf">Descargar resultado (PDF)</button><button class="btn small" type="button" id="a-csv">Listado (.csv)</button>${shareURL("act")?`<button class="btn small" type="button" id="a-link">Copiar enlace</button>`:""}</div>`:""}`:""}
     <span class="hint">Resultado orientativo: verifica zona, tipo de uso, superficies de terreno, FOT/FOS y servicios. No considera frente, forma de la parcela, restricciones puntuales ni construcciones existentes. La localización se confirma con el Certificado de Uso Conforme (2.1).</span>
   </section>`;
   el.querySelectorAll(".plist button").forEach(b=>b.onclick=()=>{ openFromAct(S.parcels[+b.dataset.i]); });
@@ -4619,6 +4653,8 @@ function renderActResults(){
     const z=tr.dataset.z; const ps=[...A.res.keys()].map(i=>S.parcels[i]).filter(p=>p.z===z);
     let b=null; ps.forEach(p=>{ const bb=L.latLngBounds(p.rings.flat(2)); b=b?b.extend(bb):bb; }); if(b&&S.map) S.map.flyToBounds(b,{padding:[40,40],maxZoom:18,duration:.6});
   });
+  if($("a-pdf")) $("a-pdf").onclick=exportActPDF;
+  if($("a-link")) $("a-link").onclick=()=>copyText(shareURL("act"));
   if($("a-csv")) $("a-csv").onclick=async()=>{
     const rows=[["partida","nomenclatura","zona","estado","superficie_m2","cloaca","agua","sector"]].concat(list.map(({p,r})=>[partidaFmt(p.p),nomText(p.n),p.z,r.s==="S"?"Sector":ST_LABEL[r.s],String(p.s).replace(".",","),p.k?"Sí":"No",p.a?"Sí":"No",r.sect.map(x=>x.nombre).join(" | ")]));
     const csv="﻿"+rows.map(r=>r.map(x=>/[;"\n]/.test(x)?`"${String(x).replace(/"/g,'""')}"`:x).join(";")).join("\n");
@@ -4805,6 +4841,330 @@ const COVER_CSS=`
 @media (max-width:640px){.cv-row{grid-template-columns:1fr}.cv-title h1{font-size:22px}}
 @media print{body{margin:0 auto}.cover{min-height:255mm}}
 `;
+
+/* ============ Exportación PDF de la búsqueda de actividad ============ */
+const JSPDF_URL="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+function loadScript(src){ return new Promise((ok,ko)=>{ const s=document.createElement("script"); s.src=src; s.onload=ok; s.onerror=()=>ko(new Error("No se pudo cargar "+src)); document.head.appendChild(s); }); }
+async function getJsPDF(){ if(!(window.jspdf&&window.jspdf.jsPDF)) await loadScript(JSPDF_URL); return window.jspdf.jsPDF; }
+/* Helvetica estándar de PDF sólo cubre Latin-1 */
+const pt=s=>String(s??"").replace(/²/g,"2").replace(/³/g,"3").replace(/≤/g,"hasta").replace(/≥/g,"desde").replace(/[“”«»]/g,'"').replace(/[‘’]/g,"'").replace(/[–—]/g,"-").replace(/…/g,"...").replace(/[●◐◉✕†]/g,"").replace(/[^\x00-\xFF]/g,"").replace(/\s+/g," ").trim();
+const hex2rgb=h=>{h=h.replace("#",""); return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];};
+
+function bbOfParcels(list,trim){
+  if(!list.length) return null;
+  if(!trim){ let a=[180,90,-180,-90]; list.forEach(p=>{const b=pbb(p); a=[Math.min(a[0],b[0]),Math.min(a[1],b[1]),Math.max(a[2],b[2]),Math.max(a[3],b[3])];}); return a; }
+  const xs=list.map(p=>{const b=pbb(p);return (b[0]+b[2])/2;}).sort((a,b)=>a-b), ys=list.map(p=>{const b=pbb(p);return (b[1]+b[3])/2;}).sort((a,b)=>a-b);
+  const q=(v,f)=>v[Math.min(v.length-1,Math.max(0,Math.floor(f*(v.length-1))))];
+  return [q(xs,trim),q(ys,trim),q(xs,1-trim),q(ys,1-trim)];
+}
+function padBB(b,f){ const dx=(b[2]-b[0])*f+0.002, dy=(b[3]-b[1])*f+0.002; return [b[0]-dx,b[1]-dy,b[2]+dx,b[3]+dy]; }
+function aspectOf(b){ const k=Math.cos((b[1]+b[3])/2*Math.PI/180); return ((b[2]-b[0])*k)/(b[3]-b[1]); }
+
+/* Dibuja el parcelario coloreado por el resultado en un canvas */
+function drawResultMap(bb,W,H){
+  const cv=document.createElement("canvas"); cv.width=W; cv.height=H; const g=cv.getContext("2d");
+  const k=Math.cos((bb[1]+bb[3])/2*Math.PI/180), bw=(bb[2]-bb[0])*k, bh=bb[3]-bb[1];
+  const sc=Math.min(W/bw,H/bh), ox=(W-bw*sc)/2, oy=(H-bh*sc)/2;
+  const X=lo=>ox+(lo-bb[0])*k*sc, Y=la=>oy+(bb[3]-la)*sc;
+  g.fillStyle="#EEF1ED"; g.fillRect(0,0,W,H);
+  const res=S.act.res, lw=Math.max(.35,Math.min(1.2,sc/60000));
+  const draw=(p,fill,stroke)=>{ g.beginPath(); p.rings.forEach(pg=>pg.forEach(r=>{ r.forEach(([la,lo],j)=>{ const x=X(lo),y=Y(la); j?g.lineTo(x,y):g.moveTo(x,y); }); g.closePath(); })); g.fillStyle=fill; g.fill("evenodd"); g.strokeStyle=stroke; g.lineWidth=lw; g.stroke(); };
+  const inView=p=>{const b=pbb(p); return !(b[2]<bb[0]||b[0]>bb[2]||b[3]<bb[1]||b[1]>bb[3]);};
+  S.parcels.forEach(p=>{ if(!res.has(p.i)&&inView(p)) draw(p,"#DCE1DD","rgba(24,38,43,.22)"); });
+  const order="XSCP"; [...res.entries()].sort((a,b)=>order.indexOf(a[1].s)-order.indexOf(b[1].s)).forEach(([i,r])=>{ const p=S.parcels[i]; if(inView(p)) draw(p,ACT_COL[r.s],"rgba(24,38,43,.45)"); });
+  // escala y norte
+  const mpp=111320/sc; const nice=[10,20,50,100,200,250,500,1000,2000,2500,5000,10000]; const target=W*.18*mpp; let m=nice[0]; nice.forEach(v=>{ if(v<=target) m=v; });
+  const L=m/mpp, x0=W*.04, y0=H-H*.05;
+  g.fillStyle="rgba(255,255,255,.85)"; g.fillRect(x0-12,y0-42,L+90,56);
+  g.fillStyle="#18262B"; g.fillRect(x0,y0-6,L,6); g.fillStyle="#fff"; g.fillRect(x0+L/2,y0-5,L/2-1,4);
+  g.font=`${Math.round(W/70)}px Helvetica,Arial,sans-serif`; g.fillStyle="#18262B"; g.fillText("0",x0-4,y0-14); g.fillText(m>=1000?(m/1000)+" km":m+" m",x0+L-10,y0-14);
+  const nx=W-W*.05, ny=H*.07, s=W/60; g.fillStyle="#18262B"; g.beginPath(); g.moveTo(nx,ny-s*1.4); g.lineTo(nx+s*.7,ny+s*.6); g.lineTo(nx,ny+s*.1); g.lineTo(nx-s*.7,ny+s*.6); g.closePath(); g.fill();
+  g.font=`bold ${Math.round(W/60)}px Helvetica,Arial,sans-serif`; g.textAlign="center"; g.fillText("N",nx,ny-s*1.7);
+  return cv;
+}
+
+function actInterpretacion(){
+  const q=($("a-q")&&$("a-q").value||"").trim(); if(!q||typeof interpretar!=="function") return null;
+  const r=interpretar(q,S.act.cub); const hit=r.find(x=>x.c===S.act.code);
+  return {q, why:hit?(hit.why||[]).join(" "):"", otros:r.filter(x=>x.c!==S.act.code).map(x=>x.c+" "+USO_BY[x.c].n)};
+}
+
+async function exportActPDF(){
+  const A=S.act; if(!A) return toast("Primero buscá una actividad.");
+  if(!S.downloads) return toast("La descarga no está disponible en esta vista.");
+  toast("Armando el PDF…");
+  let jsPDF; try{ jsPDF=await getJsPDF(); }catch(e){ return toast("No se pudo cargar el generador de PDF. Revisá la conexión."); }
+  const doc=new jsPDF({unit:"mm",format:"a4"}), PW=210, PH=297, M=15, CW=PW-2*M;
+  const u=USO_BY[A.code], today=new Date().toLocaleDateString("es-AR",{day:"numeric",month:"long",year:"numeric"});
+  const INK=[24,38,43], INK2=[74,90,94], AC=[14,90,110], LINE=[201,209,203];
+  const txt=(s,x,y,o={})=>{ doc.setFont("helvetica",o.b?"bold":o.i?"italic":"normal"); doc.setFontSize(o.sz||9.5); doc.setTextColor(...(o.c||INK)); doc.text(pt(s),x,y,o.align?{align:o.align}:undefined); };
+  const para=(s,x,y,w,o={})=>{ doc.setFont("helvetica",o.b?"bold":o.i?"italic":"normal"); doc.setFontSize(o.sz||9.5); doc.setTextColor(...(o.c||INK)); const lines=doc.splitTextToSize(pt(s),w); const lh=(o.sz||9.5)*.42; lines.forEach((l,i)=>doc.text(l,x,y+i*lh)); return y+lines.length*lh; };
+  const hr=(y,c=AC,w=.6)=>{ doc.setDrawColor(...c); doc.setLineWidth(w); doc.line(M,y,PW-M,y); };
+  const H2=(t,y)=>{ txt(t.toUpperCase(),M,y,{b:true,sz:10,c:AC}); hr(y+1.8); return y+8; };
+  let y;
+  const newPage=()=>{ doc.addPage(); y=M+6; };
+  const need=h=>{ if(y+h>PH-M-8) newPage(); };
+
+  // ---- Encabezado
+  txt("Municipalidad de San Andrés de Giles",M,M+2,{b:true,sz:12.5,c:AC});
+  txt("DIRECCIÓN DE PLANEAMIENTO Y OBRAS PARTICULARES",M,M+7.5,{sz:8.5,c:INK2});
+  txt("BÚSQUEDA DE LOCALIZACIÓN",PW-M,M+2,{sz:8.5,c:INK2,align:"right"}); txt(today,PW-M,M+7.5,{b:true,sz:9.5,align:"right"});
+  hr(M+11,AC,1);
+  y=M+20;
+  txt("¿DÓNDE SE PUEDE INSTALAR ESTA ACTIVIDAD?",M,y,{sz:8.5,c:INK2}); y+=8;
+  const it=actInterpretacion();
+  if(it){ y=para(`"${it.q}"`,M,y,CW,{b:true,sz:20}); y+=1; }
+  // tarjeta del uso
+  doc.setFillColor(237,242,240); doc.setDrawColor(...LINE);
+  const defLines=doc.splitTextToSize(pt(u.d||""),CW-40);
+  const cardH=14+Math.min(defLines.length,7)*3.9;
+  doc.rect(M,y,CW,cardH,"F"); doc.setFillColor(...AC); doc.rect(M,y,2,cardH,"F");
+  txt(A.code,M+7,y+9,{b:true,sz:15,c:AC}); txt(u.n,M+34,y+7.5,{b:true,sz:11});
+  doc.setFont("helvetica","normal"); doc.setFontSize(8.6); doc.setTextColor(...INK2); defLines.slice(0,7).forEach((l,i)=>doc.text(l,M+34,y+12.5+i*3.9));
+  y+=cardH+5;
+  if(it&&it.why){ y=para("Interpretación: "+it.why+(it.otros.length?" Otros encuadres posibles: "+it.otros.join(" · ")+".":""),M,y,CW,{sz:8.6,c:INK2,i:true})+2; }
+  // parámetros
+  const prm=[["Sup. cubierta",A.cub?fmt(A.cub,0)+" m²":"sin indicar"],["Planta baja",A.pb?fmt(A.pb,0)+" m²":"sin indicar"],["Terreno",A.tmin||A.tmax?(A.tmin?"desde "+fmt(A.tmin,0)+" ":"")+(A.tmax?"hasta "+fmt(A.tmax,0)+" ":"")+"m²":"cualquiera"],
+    ["Incluye",[A.incC?"condicionados":null,A.incS?"sectores":null,A.incX?"complementarios":null].filter(Boolean).join(", ")||"sólo permitidos"]];
+  const pw=CW/4; prm.forEach(([a,b],i)=>{ txt(a.toUpperCase(),M+i*pw,y,{sz:7,c:INK2}); txt(b,M+i*pw,y+4.5,{b:true,sz:9.5}); });
+  y+=10;
+  // KPIs
+  const cnt={P:0,C:0,X:0,S:0}; A.res.forEach(r=>cnt[r.s]++);
+  const desc=Object.values(A.motivos).reduce((a,b)=>a+b,0);
+  const kp=[["P",cnt.P],["C",cnt.C],["S",cnt.S],["X",cnt.X]].filter(([k,v])=>v||k==="P");
+  const kw=CW/(kp.length+1);
+  kp.forEach(([k,v],i)=>{ const x=M+i*kw; doc.setFillColor(...hex2rgb(ACT_COL[k])); doc.rect(x,y,3,12,"F"); txt(v.toLocaleString("es-AR"),x+5,y+6,{b:true,sz:15}); para(ACT_LAB[k],x+5,y+10,kw-8,{sz:7.2,c:INK2}); });
+  { const x=M+kp.length*kw; doc.setFillColor(...hex2rgb(ACT_COL.N)); doc.rect(x,y,3,12,"F"); txt(desc.toLocaleString("es-AR"),x+5,y+6,{b:true,sz:15,c:INK2}); txt("Descartadas",x+5,y+10,{sz:7.2,c:INK2}); }
+  y+=19;
+  // mapa del partido
+  const all=bbOfParcels(S.parcels), bbP=padBB(all,.02), arP=aspectOf(bbP);
+  let mw=CW, mh=mw/arP; const maxH=PH-M-12-y; if(mh>maxH){ mh=maxH; mw=mh*arP; }
+  const cvP=drawResultMap(bbP,Math.round(mw*12),Math.round(mh*12));
+  doc.addImage(cvP.toDataURL("image/jpeg",.9),"JPEG",M+(CW-mw)/2,y,mw,mh); doc.setDrawColor(...LINE); doc.setLineWidth(.3); doc.rect(M+(CW-mw)/2,y,mw,mh);
+  txt("Partido de San Andrés de Giles · parcelas según el resultado",M,y+mh+4,{sz:7.5,c:INK2});
+
+  // ---- Página 2: detalle + zonas
+  newPage();
+  const resP=[...A.res.keys()].map(i=>S.parcels[i]);
+  let bbD=resP.length?padBB(bbOfParcels(resP,.03),.08):null;
+  const area=b=>(b[2]-b[0])*(b[3]-b[1]);
+  let titD="Detalle de las parcelas resultantes";
+  if(!bbD || area(bbD)>area(bbP)*.35){ bbD=padBB(bbOfParcels(S.parcels.filter(p=>["CA","R1","R2","R3","R4","R5","R6"].includes(p.zi.fam)),.01),.12); titD="Planta urbana de San Andrés de Giles"; }
+  y=H2(titD,y);
+  const arD=aspectOf(bbD); let dw=CW, dh=dw/arD; if(dh>100){ dh=100; dw=dh*arD; }
+  const cvD=drawResultMap(bbD,Math.round(dw*12),Math.round(dh*12));
+  doc.addImage(cvD.toDataURL("image/jpeg",.9),"JPEG",M+(CW-dw)/2,y,dw,dh); doc.setDrawColor(...LINE); doc.rect(M+(CW-dw)/2,y,dw,dh);
+  y+=dh+3;
+  // leyenda
+  let lx=M; [["P"],["C"],["S"],["X"],["N"]].forEach(([k])=>{ if(k!=="N"&&!cnt[k]&&k!=="P") return; doc.setFillColor(...hex2rgb(k==="N"?"#DCE1DD":ACT_COL[k])); doc.rect(lx,y,3.5,3.5,"F"); const l=k==="N"?"No admitido o no cumple":ACT_LAB[k]; txt(l,lx+5,y+2.9,{sz:7.5}); lx+=doc.getTextWidth(pt(l))+11; });
+  y+=10;
+  // tabla por zona
+  const byZ=new Map(); A.res.forEach((r,i)=>{ const p=S.parcels[i]; const k=p.z||"—"; const o=byZ.get(k)||{z:k,n:0,s:r.s,sect:r.sect,sup:0}; o.n++; o.sup+=p.s; byZ.set(k,o); });
+  const zonas=[...byZ.values()].sort((a,b)=>"PCXS".indexOf(a.s)-"PCXS".indexOf(b.s)||b.n-a.n);
+  if(zonas.length){
+    y=H2("Resultado por zona",y);
+    const cols=[[M,"Zona"],[M+78,"Estado"],[M+128,"Parcelas"],[M+152,"Sup. total"]];
+    const head=()=>{ cols.forEach(([x,t],i)=>txt(t.toUpperCase(),i>=2?x+(i===2?20:28):x,y,{sz:7,c:INK2,b:true,align:i>=2?"right":undefined})); y+=2; hr(y,INK,.3); y+=4; };
+    head();
+    zonas.forEach(o=>{
+      const nm=(getFicha(o.z)||{}).nombre||zoneInfo(o.z).name;
+      doc.setFontSize(8.3); const sub=o.s==="S"?doc.splitTextToSize(pt("Sólo sobre: "+o.sect.map(x=>x.nombre).join(" · ")),72):[];
+      const rh=5+sub.length*3.4; need(rh+2); if(y<M+10){ head(); }
+      txt(o.z,M,y,{b:true,sz:8.8}); txt(nm,M+16,y,{sz:8.3,c:INK2});
+      sub.forEach((l,i)=>txt(l,M,y+3.8+i*3.4,{sz:7.4,c:INK2,i:true}));
+      doc.setFillColor(...hex2rgb(ACT_COL[o.s])); doc.circle(M+79.5,y-1,1.3,"F"); txt(o.s==="S"?"Sólo sector":ST_LABEL[o.s],M+82.5,y,{sz:8.3});
+      txt(o.n.toLocaleString("es-AR"),M+148,y,{sz:8.8,align:"right"}); txt(fmt(o.sup/10000,1)+" ha",M+180,y,{sz:8.3,align:"right",c:INK2});
+      y+=rh; doc.setDrawColor(...LINE); doc.setLineWidth(.2); doc.line(M,y-3,PW-M,y-3);
+    });
+    y+=3;
+  }
+  const exc=[["zona","La zona no admite el uso"],["sup","Superficie de terreno fuera del rango"],["lim","Superan el límite que fija la ficha"],["fot","El FOT no alcanza para la superficie cubierta"],["fos","El FOS no alcanza para la planta baja"],["serv","Faltan servicios exigidos"],["area","Fuera del área elegida"]].filter(([k])=>A.motivos[k]);
+  if(exc.length){ need(12+exc.length*5); y=H2("Parcelas descartadas",y); exc.forEach(([k,t])=>{ txt(t,M,y,{sz:8.6}); txt(A.motivos[k].toLocaleString("es-AR"),M+80,y,{sz:8.6,align:"right"}); y+=4.8; }); y+=3; }
+  // lectura
+  need(52); y=H2("Cómo leer este resultado",y);
+  [ "El resultado cruza la zona COU de cada parcela con la ficha de usos de la zona, las superficies de terreno que exige la definición del uso, los límites que la ficha fija para ese uso y la capacidad constructiva (FOT y FOS) frente a las superficies indicadas.",
+    "\"Condicionado\": requiere informe favorable de la Dirección de Planeamiento y convalidación del Honorable Concejo Deliberante. \"Sólo sector\": la zona agrega el uso únicamente en parcelas frentistas a las calles o rutas que indica la ficha; hay que verificar el frente de la parcela.",
+    "No se consideran el frente ni la forma de la parcela, restricciones o afectaciones puntuales, construcciones existentes ni normas de otras jurisdicciones (ambientales, provinciales, de tránsito).",
+    "La interpretación de la actividad es orientativa: el encuadre lo define la Dirección de Planeamiento al otorgar el Certificado de Uso Conforme (art. 2.1). Los usos no previstos se tratan según el art. 2.3." ].forEach(s=>{ need(14); y=para("· "+s,M,y,CW,{sz:8.6})+1.8; });
+
+  // ---- Listado
+  const list=[...A.res.entries()].map(([i,r])=>({p:S.parcels[i],r})).sort((a,b)=>"PCXS".indexOf(a.r.s)-"PCXS".indexOf(b.r.s)||b.p.s-a.p.s);
+  const CAP=1200, rows=list.slice(0,CAP);
+  if(rows.length){
+    y+=4; need(40); y=H2(`Listado de parcelas (${rows.length.toLocaleString("es-AR")}${list.length>CAP?" de "+list.length.toLocaleString("es-AR"):""})`,y);
+    if(list.length>CAP){ y=para(`Se listan las ${CAP} primeras por estado y superficie. El listado completo está en la descarga .csv de la web.`,M,y,CW,{sz:8,c:INK2,i:true})+2; }
+    const C=[M,M+7,M+66,M+92,M+112,M+138,M+170];
+    const head=()=>{ ["#","Nomenclatura","Partida","Zona","Sup. m²","Estado","Clo./Agua"].forEach((t,i)=>txt(t.toUpperCase(),i===4?C[i]+20:C[i],y,{sz:6.8,c:INK2,b:true,align:i===4?"right":undefined})); y+=1.8; hr(y,INK,.3); y+=3.6; };
+    head();
+    rows.forEach(({p,r},n)=>{
+      if(y>PH-M-10){ newPage(); head(); }
+      if(n%2===0){ doc.setFillColor(244,246,243); doc.rect(M,y-3,CW,4.3,"F"); }
+      txt(String(n+1),C[0],y,{sz:7.2,c:INK2}); txt(nomText(p.n),C[1],y,{sz:7.4}); txt(partidaFmt(p.p),C[2],y,{sz:7.4}); txt(p.z,C[3],y,{sz:7.4,b:true});
+      txt(fmt(p.s,0),C[4]+20,y,{sz:7.4,align:"right"}); doc.setFillColor(...hex2rgb(ACT_COL[r.s])); doc.rect(C[5],y-2.3,2.2,2.2,"F"); txt(r.s==="S"?"Sector":ST_LABEL[r.s],C[5]+3.4,y,{sz:7.2});
+      txt((p.k?"Sí":"No")+" / "+(p.a?"Sí":"No"),C[6],y,{sz:7.2,c:INK2});
+      y+=4.3;
+    });
+  }
+  // pies de página
+  const n=doc.getNumberOfPages(), link=typeof shareURL==="function"?shareURL("act"):"";
+  for(let i=1;i<=n;i++){ doc.setPage(i); hr(PH-M+1,LINE,.3);
+    txt("Consulta orientativa · COU San Andrés de Giles 2022-2024 · Parcelario 2024 · No reemplaza el Certificado de Uso Conforme",M,PH-M+5,{sz:6.8,c:INK2});
+    txt(`${i} / ${n}`,PW-M,PH-M+5,{sz:7,c:INK2,align:"right"});
+    if(link&&i===1){ doc.setTextColor(...AC); doc.setFontSize(7); doc.textWithLink(pt("Ver esta búsqueda en la web: "+link).slice(0,140),M,PH-M+9,{url:link}); }
+  }
+  const blob=doc.output("blob");
+  try{ await S.downloads.save({filename:`localizacion_${A.code}_${new Date().toISOString().slice(0,10)}.pdf`,data:blob}); toast("PDF listo"); }
+  catch(e){ if(e&&e.code!=="declined") toast("No se pudo descargar el PDF."); }
+}
+
+/* ============ Enlaces para compartir y ubicación ============ */
+function publicBase(){
+  try{
+    if(!/^https?:$/.test(location.protocol)) return "";
+    if(window.top!==window) return "";
+    if(/claudeusercontent|claude\.ai|claude\.site/.test(location.hostname)) return "";
+    return location.origin+location.pathname;
+  }catch(e){ return ""; }
+}
+function actParams(){
+  const A=S.act; if(!A) return "";
+  const q=$("a-q")?$("a-q").value.trim():"";
+  const o={act:A.code}; if(q) o.q=q; if(A.cub) o.cub=A.cub; if(A.pb) o.pb=A.pb; if(A.tmin) o.tmin=A.tmin; if(A.tmax) o.tmax=A.tmax;
+  o.c=A.incC?1:0; o.s=A.incS?1:0; o.x=A.incX?1:0;
+  return new URLSearchParams(o).toString();
+}
+function shareURL(kind){
+  const b=publicBase(); if(!b) return "";
+  if(kind==="act") return S.act?b+"#"+actParams():"";
+  if(kind==="p") return S.sel?b+"#p="+S.sel.p:"";
+  return b;
+}
+function syncHash(kind){
+  if(!publicBase()) return;
+  const h=kind==="act"?actParams():kind==="p"&&S.sel?"p="+S.sel.p:"";
+  try{ history.replaceState(null,"",location.pathname+location.search+(h?"#"+h:"")); }catch(e){}
+}
+/* Abre la consulta indicada en el enlace. Devuelve true si aplicó algo. */
+function applyHash(){
+  const h=(location.hash||"").replace(/^#/,""); if(!h) return false;
+  const P=new URLSearchParams(h);
+  try{
+    if(P.get("z")) setZone(P.get("z"),true);
+    if(P.get("p")){ $("in-part").value=P.get("p"); searchPartida(P.get("p")); return !!S.sel; }
+    const code=P.get("act");
+    if(code && USO_BY[code]){
+      setMainTab("act");
+      const set=(id,v)=>{ if($(id)&&v!=null) $(id).value=v; };
+      set("a-q",P.get("q")||""); set("a-cub",P.get("cub")); set("a-pb",P.get("pb")); set("a-tmin",P.get("tmin")); set("a-tmax",P.get("tmax"));
+      if(P.has("c")) $("a-c").checked=P.get("c")==="1"; if(P.has("s")) $("a-s").checked=P.get("s")==="1"; if(P.has("x")) $("a-x").checked=P.get("x")==="1";
+      if(P.get("q")) renderInterp();
+      selectCode(code); S._userPicked=true; runAct();
+      return true;
+    }
+  }catch(e){ console.warn(e); }
+  return false;
+}
+window.addEventListener("hashchange",()=>{ applyHash(); });
+
+/* ---- Mi ubicación: busca la parcela donde está parado el usuario ---- */
+function pointInRing(x,y,r){ let c=false; for(let i=0,j=r.length-1;i<r.length;j=i++){ const [yi,xi]=r[i],[yj,xj]=r[j]; if(((yi>y)!==(yj>y)) && x<(xj-xi)*(y-yi)/(yj-yi)+xi) c=!c; } return c; }
+function parcelAt(lat,lng){
+  return S.parcels.find(p=>{ const b=pbb(p); if(lng<b[0]||lng>b[2]||lat<b[1]||lat>b[3]) return false;
+    return p.rings.some(pg=>pointInRing(lng,lat,pg[0]) && !pg.slice(1).some(h=>pointInRing(lng,lat,h))); });
+}
+let _geoMk=null;
+function locateMe(){
+  if(!navigator.geolocation) return toast("Tu navegador no ofrece la ubicación.");
+  toast("Buscando tu ubicación…");
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const {latitude:la,longitude:lo,accuracy:acc}=pos.coords;
+    if(S.map){ if(_geoMk) _geoMk.remove(); _geoMk=L.circleMarker([la,lo],{radius:7,color:"#fff",weight:2,fillColor:"#1E6FD9",fillOpacity:1,renderer:S.rend}).addTo(S.map); }
+    const p=parcelAt(la,lo);
+    if(p){ setMainTab("consulta"); selectParcel(p,true); toast(acc>30?`Parcela aproximada (precisión ±${Math.round(acc)} m). Verificá en el plano.`:"Parcela en tu ubicación"); }
+    else { if(S.map) S.map.flyTo([la,lo],17,{duration:.6}); toast("Tu ubicación no cae sobre una parcela del parcelario (calle o fuera del Partido)."); }
+  },err=>{ toast(err.code===1?"No diste permiso de ubicación.":"No se pudo obtener la ubicación."); },{enableHighAccuracy:true,timeout:12000,maximumAge:30000});
+}
+if($("geo-b")){ if(navigator.geolocation){ $("geo-b").hidden=false; $("geo-b").onclick=locateMe; } }
+
+/* ============ Verificador de prefactibilidad del proyecto ============ */
+const VF_FIELDS=[["uso","Uso previsto"],["pb","Planta baja","m²"],["tot","Cubierta total","m²"],["pl","Plantas (con PB)"],["uv","Viviendas"],["dor","Dormitorios"],["abs","Suelo absorbente","m²"]];
+function verifChecks(p,f,c,v){
+  const out=[], add=(lab,proy,lim,st,msg)=>out.push({lab,proy,lim,st,msg});
+  const n=x=>x===""||x==null?null:+String(x).replace(",",".");
+  const pb=n(v.pb), tot=n(v.tot), pl=n(v.pl), uv=n(v.uv), dor=n(v.dor), abs=n(v.abs);
+  const noPrem=f.premios&&/no se permite ninguno/i.test(f.premios);
+  if(v.uso){
+    const u=USO_BY[v.uso], s=statusOf(f,v.uso), uo=useOf(f,v.uso);
+    const sect=(f.sectores||[]).filter(sc=>sc.usos&&sc.usos[v.uso]).map(sc=>sc.nombre);
+    if(s==="P") add("Uso "+v.uso,u.n,"Permitido","ok","La ficha de la zona lo admite."+(uo.nota?" Límite: "+uo.nota+".":""));
+    else if(s==="C") add("Uso "+v.uso,u.n,"Condicionado","warn","Requiere informe favorable de la D.P. y convalidación del HCD."+(uo.nota?" Límite: "+uo.nota+".":""));
+    else if(s==="X") add("Uso "+v.uso,u.n,"Complementario","warn","Sólo junto a un uso permitido ya instalado en la parcela (1.3.1.1).");
+    else if(sect.length) add("Uso "+v.uso,u.n,"Sólo en sector","warn","La zona lo agrega únicamente en: "+sect.join(" · ")+". Verificá el frente de la parcela.");
+    else if(s==="U") add("Uso "+v.uso,u.n,"Sin clasificar","warn","La ficha no clasifica usos por tipo: lo define la D.P.");
+    else add("Uso "+v.uso,u.n,"No permitido","bad","La ficha de la zona no lo admite. Usos no previstos: art. 2.3.");
+    if(v.uso==="VM" && !p.k) add("Cloaca para VM","Sin red","Exigida","bad","La vivienda multifamiliar exige conexión a desagües cloacales.");
+    if(tot && typeof sugerencia==="function"){ const sg=sugerencia(v.uso,tot); if(sg) add("Categoría del uso",fmt(tot,0)+" m²","Según definición","warn",sg.replace(/<[^>]+>/g,"")); }
+    const lim=typeof limiteNota==="function"?limiteNota(uo.nota):null;
+    if(lim&&tot){ if(lim.max&&tot>lim.max) add("Límite de la ficha",fmt(tot,0)+" m² totales","hasta "+lim.max+" m²","warn","La ficha limita este uso ("+uo.nota+"). Verificá que la superficie afectada a la actividad no lo supere."); }
+  }
+  if(pb!=null && c.ocup!=null) add("FOS · ocupación",fmt(pb,1)+" m²",fmt(c.ocup,1)+" m²",pb<=c.ocup?"ok":"bad",pb<=c.ocup?`Usa el ${Math.round(pb/c.ocup*100)} % de lo admitido.`:`Excede en ${fmt(pb-c.ocup,1)} m².`);
+  if(tot!=null && c.cub!=null){
+    if(tot<=c.cub) add("FOT · sup. cubierta",fmt(tot,1)+" m²",fmt(c.cub,1)+" m²","ok",`Usa el ${Math.round(tot/c.cub*100)} % de lo admitido.`);
+    else if(!noPrem && tot<=c.cubPremio) add("FOT · sup. cubierta",fmt(tot,1)+" m²",fmt(c.cub,1)+" m²","warn",`Sólo con premios (hasta ${fmt(c.cubPremio,1)} m², 4.2.4): hay que cumplir las condiciones de premio.`);
+    else add("FOT · sup. cubierta",fmt(tot,1)+" m²",fmt(c.cub,1)+" m²","bad",`Excede en ${fmt(tot-(noPrem?c.cub:c.cubPremio),1)} m²${noPrem?"; la zona no admite premios":" aun con premios"}.`);
+  }
+  if(pl!=null){ const mx=typeof alturaPlantas==="function"?alturaPlantas(f.altura_max):null;
+    if(mx) add("Altura",pl+" plantas",f.altura_max+" ("+mx+" pl.)",pl<=mx?"ok":"bad",pl<=mx?"Dentro de la altura máxima.":"Supera la altura máxima de la zona.");
+    else if(f.altura_max) add("Altura",pl+" plantas",f.altura_max,"warn","Verificá la altura en metros según la ficha."); }
+  if(uv!=null||dor!=null){
+    if(c.unaViv){ add("Densidad",(uv??"—")+" viv.","1 vivienda",(uv??1)<=1?"ok":"bad",(uv??1)<=1?"La zona admite una vivienda por parcela.":"La zona admite una sola vivienda por parcela."); }
+    else if(dor!=null && c.hab!=null){ const hab=dor*2; add("Densidad",hab+" hab. ("+dor+" dorm.)",c.hab+" hab.",hab<=c.hab?"ok":"bad",hab<=c.hab?"Dentro de la densidad"+(c.denNota?" ("+c.denNota+")":"")+".":`Excede en ${hab-c.hab} habitantes; se computan 2 por dormitorio.`); }
+  }
+  if(abs!=null && c.abs!=null) add("Suelo absorbente",fmt(abs,1)+" m²","mín. "+fmt(c.abs,1)+" m²",abs>=c.abs?"ok":"bad",abs>=c.abs?"Cumple el mínimo absorbente.":`Faltan ${fmt(c.abs-abs,1)} m².`);
+  return out;
+}
+function verifVerdict(ch){
+  if(!ch.length) return null;
+  if(ch.some(x=>x.st==="bad")) return ["bad","El anteproyecto no cumple alguno de los indicadores verificados."];
+  if(ch.some(x=>x.st==="warn")) return ["warn","Cumple los indicadores, con condiciones a resolver."];
+  return ["ok","Cumple los indicadores verificados."];
+}
+const VF_SYM={ok:"✓",warn:"!",bad:"✕"};
+function renderVerif(p,f,c){
+  const el=$("informe"); if(!f||!el) return;
+  const secs=el.querySelectorAll("section.sec"); const after=secs[2]; if(!after) return;
+  const mine=S.verif&&S.verif.i===p.i; const v=mine?S.verif.v:{uso:"",pb:"",tot:"",pl:"",uv:"",dor:"",abs:""};
+  const opts=USOS.map(g=>`<optgroup label="${esc(g.g)}">`+g.items.map(([k,nm])=>{const s=statusOf(f,k); return `<option value="${k}" ${v.uso===k?"selected":""}>${k} · ${esc(nm)}${s==="P"?"":s==="C"?" (cond.)":s==="X"?" (compl.)":s==="N"?" (no perm.)":""}</option>`;}).join("")+`</optgroup>`).join("");
+  const box=document.createElement("section"); box.className="sec"; box.id="vf";
+  box.innerHTML=`<details class="norm" ${mine?"open":""}><summary>Verificar mi proyecto <span class="cite">prefactibilidad</span></summary><div>
+    <p class="hint" style="margin:0 0 8px">Cargá los datos del anteproyecto: la web los compara con los indicadores de la zona aplicados a esta parcela. Completá sólo lo que tengas.</p>
+    <div class="vf-grid">
+      <label class="wide">Uso previsto<select id="vf-uso"><option value="">— elegir —</option>${opts}</select></label>
+      ${VF_FIELDS.slice(1).map(([k,l,un])=>`<label>${l}${un?` <span class="hint">(${un})</span>`:""}<input id="vf-${k}" type="number" min="0" step="any" inputmode="decimal" value="${esc(v[k]||"")}"></label>`).join("")}
+    </div>
+    <div id="vf-out"></div>
+    <p class="hint" style="margin:6px 0 0">Verificación preliminar: no evalúa retiros, frente, patios, estacionamiento ni normas de habitabilidad. Retiros de la zona: frente ${esc(f.retiro_frente||"—")} · lateral ${esc(f.retiro_lateral||"—")} · fondo ${esc(f.retiro_fondo||"—")}.</p>
+  </div></details>`;
+  after.after(box);
+  const run=()=>{
+    const nv={}; VF_FIELDS.forEach(([k])=>nv[k]=$("vf-"+k).value);
+    const ch=verifChecks(p,f,c,nv), vd=verifVerdict(ch);
+    S.verif={i:p.i,v:nv,ch};
+    $("vf-out").innerHTML=ch.length?`<div class="vf-verdict ${vd[0]}">${VF_SYM[vd[0]]} ${esc(vd[1])}</div>
+      <ul class="vf-l">${ch.map(x=>`<li><span class="vf-s ${x.st}">${VF_SYM[x.st]}</span><div><b>${esc(x.lab)}</b><div class="vf-n"><span>Proyecto <b>${esc(x.proy)}</b></span><span>Admitido <b>${esc(x.lim)}</b></span></div><div class="hint">${esc(x.msg)}</div></div></li>`).join("")}</ul>
+      <span class="hint">El resultado se incluye en el informe descargable.</span>`:"";
+  };
+  box.querySelectorAll("input,select").forEach(i=>i.addEventListener("input",run));
+  run();
+}
+function verifInformeHTML(p,f,c){
+  if(!f||!S.verif||S.verif.i!==p.i||!S.verif.ch||!S.verif.ch.length) return "";
+  const vd=verifVerdict(S.verif.ch), col={ok:"#2E7D4F",warn:"#A5610B",bad:"#A83A2F"};
+  return `<p style="font-family:'Arial Narrow',Arial,sans-serif;font-weight:700;color:${col[vd[0]]};font-size:15px;margin:6px 0">${VF_SYM[vd[0]]} ${esc(vd[1])}</p>
+  <table><tr><th style="width:26%">Indicador</th><th style="width:18%">Proyecto</th><th style="width:18%">Admitido</th><th>Observación</th></tr>
+  ${S.verif.ch.map(x=>`<tr><td><b style="color:${col[x.st]}">${VF_SYM[x.st]}</b> ${esc(x.lab)}</td><td class="m">${esc(x.proy)}</td><td class="m">${esc(x.lim)}</td><td class="s">${esc(x.msg)}</td></tr>`).join("")}</table>
+  <p class="s">Verificación preliminar con los datos declarados por el solicitante. No evalúa retiros, frente, patios, estacionamiento ni habitabilidad, y no reemplaza el visado de planos.</p>`;
+}
 
 </script>
 
