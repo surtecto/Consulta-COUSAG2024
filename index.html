@@ -9,6 +9,10 @@
 <script>
 window.addEventListener("error",function(e){if(e.target&&e.target.tagName&&e.target.tagName!=="SCRIPT")return;var d=document.getElementById("diag")||document.body.appendChild(Object.assign(document.createElement("div"),{id:"diag"}));d.style.cssText="position:fixed;left:10px;right:10px;bottom:10px;z-index:99999;background:#A83A2F;color:#fff;padding:10px 14px;font:14px system-ui;border-radius:6px";d.textContent="Error al cargar la página: "+(e.message||e.target&&e.target.src||"recurso no disponible")+(e.filename?" ("+e.filename.split("/").pop()+":"+e.lineno+")":"");},true);
 </script>
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#047857">
 <title>Consulta Urbanística Giles</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">

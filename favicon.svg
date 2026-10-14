@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <title>Consulta Urbanística</title>
+  <rect width="64" height="64" rx="13" fill="#047857"/>
+  <g fill="#F5F5F4">
+    <rect x="7" y="7" width="14" height="14" rx="2.5"/><rect x="25" y="7" width="14" height="14" rx="2.5"/><rect x="43" y="7" width="14" height="14" rx="2.5"/>
+    <rect x="7" y="25" width="14" height="14" rx="2.5"/><rect x="25" y="25" width="14" height="14" rx="2.5"/>
+    <rect x="7" y="43" width="14" height="14" rx="2.5"/><rect x="25" y="43" width="14" height="14" rx="2.5"/><rect x="43" y="43" width="14" height="14" rx="2.5"/>
+  </g>
+  <rect x="43" y="25" width="14" height="14" rx="2.5" fill="#F59E0B" stroke="#1C1917" stroke-width="2.5"/>
+</svg>
