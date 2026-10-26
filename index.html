@@ -246,6 +246,24 @@ dialog::backdrop{background:rgba(10,20,24,.45)}
 .ucell button.P{background:var(--ok-soft);color:var(--ok)} .ucell button.C{background:var(--warn-soft);color:var(--warn)} .ucell button.N{background:var(--bad-soft);color:var(--bad)} .ucell button.U{background:var(--surface-2);color:var(--ink-3)}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--ground);padding:8px 14px;border-radius:5px;font-size:13.5px;z-index:2000}
 
+/* Reporte de errores */
+.rep-b{border:1px solid var(--line-strong);background:transparent;color:var(--ink-2);border-radius:4px;padding:3px 9px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
+.rep-b:hover{color:var(--bad);border-color:var(--bad)}
+#rep{width:min(520px,calc(100vw - 24px))}
+#rep .ctx{background:var(--surface-2);border-radius:4px;padding:8px 10px;font-size:13.5px;display:flex;gap:8px;align-items:flex-start}
+#rep .ctx input{margin-top:3px}
+#rep .tipos{display:flex;flex-wrap:wrap;gap:6px}
+#rep .tipos label{border:1px solid var(--line-strong);border-radius:999px;padding:4px 11px;font-size:13px;cursor:pointer;user-select:none}
+#rep .tipos input{position:absolute;opacity:0;pointer-events:none}
+#rep .tipos label:has(input:checked){background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+#rep .tipos label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+#rep textarea{width:100%;min-height:96px;resize:vertical;font:inherit;font-size:15px;padding:8px;border:1px solid var(--line-strong);border-radius:4px;background:var(--surface);color:var(--ink)}
+#rep .hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+#rep .ok-view{text-align:center;padding:10px 4px}
+#rep .ok-view .big{font-size:34px;color:var(--ok);line-height:1}
+#rep .ok-view code{font-family:var(--f-mono);font-weight:600}
+#rep .err{font-size:13.5px;padding:8px 10px;border-radius:4px;background:var(--bad-soft);color:var(--bad)}
+
 @media (max-width:900px){
   .app{display:flex;flex-direction:column;height:auto}
   aside.panel{border-right:0;overflow:visible;order:3}
@@ -273,6 +291,7 @@ dialog::backdrop{background:rgba(10,20,24,.45)}
     <div class="status" aria-live="polite">
       <span>Parcelario <b id="st-parc">…</b></span>
       <span>Fichas de zona <b id="st-fichas">—</b></span>
+      <button type="button" class="rep-b" id="rep-b" title="Avisar a la Dirección de Planeamiento sobre un dato incorrecto o algo que no funciona">⚑ Reportar un error</button>
     </div>
   </header>
 
@@ -404,6 +423,38 @@ dialog::backdrop{background:rgba(10,20,24,.45)}
 </div>
 
 <div class="toast" id="toast" hidden></div>
+
+<dialog id="rep" aria-labelledby="rep-t">
+  <form class="dlg" id="rep-f" method="dialog" novalidate>
+    <header><h2 id="rep-t">Reportar un error</h2><button class="btn small" type="button" data-close aria-label="Cerrar">✕</button></header>
+    <div class="body" id="rep-body">
+      <p class="prose muted" style="margin:0;font-size:14px">¿Un dato que no coincide, algo que no funciona o que confunde? Contalo en pocas palabras. Lo recibe y revisa la Dirección de Planeamiento.</p>
+      <label class="ctx" id="rep-ctx" hidden><input type="checkbox" id="rep-use" checked><span>Es sobre la parcela consultada: <b id="rep-ctx-t"></b></span></label>
+      <div><div class="eyebrow" style="margin-bottom:6px">Qué tipo de error</div>
+        <div class="tipos" role="radiogroup" aria-label="Tipo de error">
+          <label><input type="radio" name="rep-tipo" value="Zona o plano">Zona o plano</label>
+          <label><input type="radio" name="rep-tipo" value="Indicadores (FOS, FOT, alturas…)">Indicadores</label>
+          <label><input type="radio" name="rep-tipo" value="Usos permitidos">Usos permitidos</label>
+          <label><input type="radio" name="rep-tipo" value="Datos de la parcela">Datos de la parcela</label>
+          <label><input type="radio" name="rep-tipo" value="La página no funciona bien">La página no funciona</label>
+          <label><input type="radio" name="rep-tipo" value="Otro" checked>Otro</label>
+        </div>
+      </div>
+      <label class="fld">Qué está mal
+        <textarea id="rep-d" maxlength="2000" required placeholder="Ej.: la parcela figura en zona R2 pero está frente a la ruta, que es corredor comercial."></textarea>
+      </label>
+      <label class="fld">Tu mail o teléfono <span class="muted" style="font-weight:400">(opcional, sólo si querés respuesta)</span>
+        <input type="text" id="rep-c" maxlength="120" autocomplete="email" inputmode="email">
+      </label>
+      <label class="hp" aria-hidden="true">No completar<input type="text" id="rep-hp" tabindex="-1" autocomplete="off"></label>
+      <div class="err" id="rep-err" hidden></div>
+    </div>
+    <footer id="rep-foot">
+      <button class="btn" type="button" data-close>Cancelar</button>
+      <button class="btn primary" type="submit" id="rep-go">Enviar reporte</button>
+    </footer>
+  </form>
+</dialog>
 
 <script src="parcelas.js" onerror="this.onerror=null;document.body.insertAdjacentHTML('beforeend','<div style=&quot;position:fixed;inset:auto 10px 10px;background:#A83A2F;color:#fff;padding:10px;font:14px system-ui;border-radius:6px;z-index:99999&quot;>No se encontró parcelas.js: subilo a la misma carpeta que index.html.</div>')"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
@@ -4072,6 +4123,7 @@ function renderInforme(p){
     </dl>
     <div class="actions">
       <button class="btn small" type="button" id="b-copy">Copiar nomenclatura</button>
+      <button class="btn small" type="button" id="b-rep" title="Avisar si algún dato de esta parcela está mal">⚑ ¿Ves un error?</button>
       ${S.downloads?`<button class="btn small primary" type="button" id="b-dl">Descargar informe</button>`:""}
       ${canPrint()?`<button class="btn small" type="button" id="b-pr">Imprimir / PDF</button>`:""}
       ${typeof shareURL==="function"&&shareURL()?`<button class="btn small" type="button" id="b-lk">Copiar enlace</button>`:""}
@@ -4151,6 +4203,7 @@ function renderInforme(p){
   if($("b-dl")) $("b-dl").onclick=()=>downloadInforme(p,f,c);
   if($("b-pr")) $("b-pr").onclick=()=>printInforme(p,f,c);
   if($("b-lk")) $("b-lk").onclick=()=>copyText(shareURL("p"));
+  $("b-rep").onclick=()=>openReport(true);
   if(typeof renderVerif==="function") renderVerif(p,f,c);
   el.querySelectorAll("[data-uf]").forEach(b=>b.onclick=()=>{renderInforme._touched=true; S.useFilter=b.dataset.uf; el.querySelectorAll("[data-uf]").forEach(x=>x.setAttribute("aria-pressed",x===b)); renderUses(f);});
   $("u-q").oninput=e=>{S.useQ=e.target.value; renderUses(f);};
@@ -5169,6 +5222,87 @@ function verifInformeHTML(p,f,c){
   ${S.verif.ch.map(x=>`<tr><td><b style="color:${col[x.st]}">${VF_SYM[x.st]}</b> ${esc(x.lab)}</td><td class="m">${esc(x.proy)}</td><td class="m">${esc(x.lim)}</td><td class="s">${esc(x.msg)}</td></tr>`).join("")}</table>
   <p class="s">Verificación preliminar con los datos declarados por el solicitante. No evalúa retiros, frente, patios, estacionamiento ni habitabilidad, y no reemplaza el visado de planos.</p>`;
 }
+
+/* ---------- Reporte de errores de los visitantes ----------
+   Envía el reporte al receptor (Apps Script de la planilla de seguimiento):
+   queda registrado y llega un mail a la Dirección. Si el receptor no está
+   configurado o falla, ofrece enviarlo por correo con los datos ya cargados. */
+const REPORT_URL = "";                 // URL de la aplicación web de Apps Script
+const REPORT_KEY = "cu-giles-2026";
+const REPORT_MAIL = "surtectura@gmail.com";
+function reportId(){ const a="ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let s=""; const r=crypto.getRandomValues(new Uint8Array(5)); r.forEach(x=>s+=a[x%a.length]); return "R-"+s; }
+function reportCtx(){
+  const p=S.sel; if(!p) return null;
+  return { partida:partidaFmt(p.p), nom:nomText(p.n), zona:p.z||"sin asignar" };
+}
+function reportData(){
+  const d=$("rep-d").value.trim(), use=!$("rep-ctx").hidden&&$("rep-use").checked, ctx=use?reportCtx():null;
+  const tipo=(document.querySelector('input[name="rep-tipo"]:checked')||{}).value||"Otro";
+  let url=""; try{ url=(ctx&&shareURL("p"))||shareURL("act")||shareURL()||location.href; }catch(e){ url=location.href; }
+  return { t:REPORT_KEY, id:reportId(), tipo, desc:d, partida:ctx?ctx.partida:"", nom:ctx?ctx.nom:"", zona:ctx?ctx.zona:"",
+    contacto:$("rep-c").value.trim(), url, ua:(navigator.userAgent||"").slice(0,200)+" · "+innerWidth+"×"+innerHeight, hp:$("rep-hp").value };
+}
+function reportMailto(r){
+  const b=[r.desc,"",r.tipo?"Tipo: "+r.tipo:"",r.partida?"Partida: "+r.partida:"",r.nom?"Nomenclatura: "+r.nom:"",r.zona&&r.partida?"Zona: "+r.zona:"",r.url?"Enlace: "+r.url:"","Código: "+r.id].filter(Boolean).join("\n");
+  return "mailto:"+REPORT_MAIL+"?subject="+encodeURIComponent("Reporte "+r.id+" · Consulta Urbanística")+"&body="+encodeURIComponent(b);
+}
+function openReport(fromParcel){
+  const dlg=$("rep"); if(!dlg) return;
+  if(dlg._done) resetReport();
+  const ctx=reportCtx();
+  $("rep-ctx").hidden=!ctx; if(ctx){ $("rep-ctx-t").textContent=ctx.nom+" · Partida "+ctx.partida+" · Zona "+ctx.zona; $("rep-use").checked=fromParcel!==false; }
+  $("rep-err").hidden=true;
+  if(typeof dlg.showModal==="function") dlg.showModal(); else dlg.setAttribute("open","");
+  setTimeout(()=>$("rep-d").focus(),50);
+}
+function closeReport(){ const dlg=$("rep"); if(dlg.close) dlg.close(); else dlg.removeAttribute("open"); }
+function resetReport(){
+  const dlg=$("rep"); dlg._done=false;
+  $("rep-d").value=""; $("rep-c").value="";
+  const o=document.querySelector('input[name="rep-tipo"][value="Otro"]'); if(o) o.checked=true;
+  $("rep-body").querySelectorAll(":scope > *").forEach(x=>{ if(x.classList.contains("ok-view")) x.remove(); else if(x.id!=="rep-err"&&x.id!=="rep-ctx"&&!x.classList.contains("hp")) x.hidden=false; });
+  $("rep-foot").innerHTML=`<button class="btn" type="button" data-close>Cancelar</button><button class="btn primary" type="submit" id="rep-go">Enviar reporte</button>`;
+}
+function reportDone(r,via){
+  const dlg=$("rep"); dlg._done=true;
+  $("rep-body").querySelectorAll(":scope > *").forEach(x=>x.hidden=true);
+  const v=document.createElement("div"); v.className="ok-view";
+  v.innerHTML=via==="mail"
+    ? `<p style="margin:0 0 8px">Se abrió tu correo con el reporte ya escrito. Sólo falta tocar <b>Enviar</b>.</p><p class="hint" style="margin:0">Código <code>${esc(r.id)}</code></p>`
+    : `<div class="big">✓</div><p style="margin:8px 0 4px;font-size:16px"><b>Gracias, recibimos tu reporte.</b></p><p class="prose muted" style="margin:0;font-size:14px">Código <code>${esc(r.id)}</code>${r.contacto?". Si hace falta, te contactamos.":"."}</p>`;
+  $("rep-body").appendChild(v);
+  $("rep-foot").innerHTML=`<button class="btn primary" type="button" data-close>Listo</button>`;
+}
+async function sendReport(ev){
+  ev.preventDefault();
+  const err=$("rep-err"); err.hidden=true;
+  const r=reportData();
+  if(r.desc.length<3){ err.textContent="Escribí brevemente qué está mal."; err.hidden=false; $("rep-d").focus(); return; }
+  if(r.hp){ reportDone(r,"api"); return; }
+  const last=Number(sessionStorageGet("rep_last")||0);
+  if(Date.now()-last<20000){ err.textContent="Esperá unos segundos antes de enviar otro reporte."; err.hidden=false; return; }
+  if(!REPORT_URL){ location.href=reportMailto(r); reportDone(r,"mail"); return; }
+  const go=$("rep-go"); go.disabled=true; go.textContent="Enviando…";
+  try{
+    const ctl=new AbortController(); const tm=setTimeout(()=>ctl.abort(),15000);
+    await fetch(REPORT_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(r),signal:ctl.signal});
+    clearTimeout(tm);
+    sessionStorageSet("rep_last",String(Date.now()));
+    reportDone(r,"api");
+  }catch(e){
+    go.disabled=false; go.textContent="Reintentar";
+    err.innerHTML=`No se pudo enviar (¿sin conexión?). Podés reintentar o <a href="${reportMailto(r)}">enviarlo por correo</a>.`; err.hidden=false;
+  }
+}
+function sessionStorageGet(k){ try{ return sessionStorage.getItem(k); }catch(e){ return null; } }
+function sessionStorageSet(k,v){ try{ sessionStorage.setItem(k,v); }catch(e){} }
+(function initReport(){
+  const dlg=$("rep"); if(!dlg) return;
+  $("rep-b").onclick=()=>openReport(false);
+  $("rep-f").addEventListener("submit",sendReport);
+  dlg.addEventListener("click",e=>{ if(e.target.closest("[data-close]")||e.target===dlg) closeReport(); });
+  $("rep-d").addEventListener("keydown",e=>{ if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)) $("rep-f").requestSubmit(); });
+})();
 
 </script>
 
