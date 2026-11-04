@@ -215,6 +215,19 @@ select[size] option{padding:3px 4px}
 .ptip{font-family:var(--f-ui);font-size:12.5px;line-height:1.35;background:var(--surface);color:var(--ink);border:1px solid var(--line-strong);box-shadow:0 2px 8px rgba(0,0,0,.18)}
 .ptip i{color:var(--accent);font-style:normal;font-weight:600}
 .predio{font-size:14px;background:var(--accent-soft);padding:6px 10px;border-radius:4px}
+.cad{list-style:none;margin:8px 0 6px;padding:0 0 0 14px;border-left:2px solid var(--line-strong)}
+.cad-g{margin:14px 0 4px -14px;padding-left:12px;font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.cad-g:first-child{margin-top:2px}
+.cad-i{position:relative;display:grid;grid-template-columns:44px 1fr;gap:8px;padding:6px 0;font-size:13.5px;line-height:1.4}
+.cad-i::before{content:"";position:absolute;left:-20px;top:11px;width:10px;height:10px;border-radius:50%;background:var(--surface);border:2px solid var(--accent)}
+.cad-y{font-family:var(--f-mono);font-size:12.5px;color:var(--ink-2);padding-top:1px}
+.cad-b b{font-weight:600}
+.cad-b>div{color:var(--ink-2)}
+.cad-t{display:inline-block;margin-top:3px;font-size:11.5px;font-weight:600;padding:1px 7px;border-radius:999px;cursor:help}
+.cad-t.o,.cad-t.r{background:var(--ok-soft);color:var(--ok)}.cad-t.p{background:var(--warn-soft);color:var(--warn)}
+.cad-l{display:block;margin-top:2px;font-size:12.5px}.cad-l a{color:var(--accent)}
+.cad-e{margin:2px 0 6px;font-size:13px;color:var(--ink-3)}
+.pch{margin:6px 0 10px}.pch img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:4px;background:#fff}.pch figcaption{font-size:13px;margin-top:4px;line-height:1.45}.pch figcaption a{color:var(--accent)}
 .sector{border-left:3px solid var(--warn);padding-left:10px;margin-top:6px}
 .unota{font-size:11.5px;font-weight:600;background:var(--warn-soft);color:var(--warn);padding:1px 6px;border-radius:3px;margin-left:4px;white-space:nowrap}
 dl.glos{margin:0;display:flex;flex-direction:column;gap:2px}
@@ -4205,6 +4218,7 @@ function renderInforme(p){
   if($("b-lk")) $("b-lk").onclick=()=>copyText(shareURL("p"));
   $("b-rep").onclick=()=>openReport(true);
   if(typeof renderVerif==="function") renderVerif(p,f,c);
+  if(typeof renderCadena==="function") renderCadena(p);
   el.querySelectorAll("[data-uf]").forEach(b=>b.onclick=()=>{renderInforme._touched=true; S.useFilter=b.dataset.uf; el.querySelectorAll("[data-uf]").forEach(x=>x.setAttribute("aria-pressed",x===b)); renderUses(f);});
   $("u-q").oninput=e=>{S.useQ=e.target.value; renderUses(f);};
   $("u-def").onchange=e=>{S.showDefs=e.target.checked; renderUses(f);};
@@ -4323,6 +4337,8 @@ ${f.superficie_texto?`<p class="s">Superficie de la zona: ${esc(f.superficie_tex
 
 ${A?H("Observaciones sobre la parcela")+`<ul>${A}</ul>`:""}
 ${(()=>{const v=typeof verifInformeHTML==="function"?verifInformeHTML(p,f,c):""; return v?H("Verificación preliminar del proyecto")+v:"";})()}
+
+${(()=>{const v=typeof cadenaInformeHTML==="function"?cadenaInformeHTML(p):"";return v?H("Cadena de mensuras")+v:"";})()}
 
 ${H("Usos del suelo")}
 <p class="s">● permitido · ◐ condicionado (informe favorable de la D.P. y convalidación del HCD) · ◉ complementario (sólo junto a un uso permitido ya instalado en la parcela) · ✕ no permitido. La nota junto a un uso transcribe el límite que fija la ficha. Definiciones: texto del Código, 1.3.1.1.</p>
@@ -5143,6 +5159,79 @@ function locateMe(){
 }
 if($("geo-b")){ if(navigator.geolocation){ $("geo-b").hidden=false; $("geo-b").onclick=locateMe; } }
 
+/* ============ Cadena de mensuras ============ */
+const ATLAS_URL="https://surtecto.github.io/atlas-mensuras-giles/";
+const SITE_URL="https://surtecto.github.io/Consulta-COUSAG2024/";
+let _cadP=null;
+function loadCadena(){
+  if(window.CADENA) return Promise.resolve(window.CADENA);
+  if(_cadP) return _cadP;
+  _cadP=new Promise((ok,ko)=>{ const s=document.createElement("script"); s.src="cadena.js"; s.onload=()=>window.CADENA?ok(window.CADENA):ko(new Error("vacío")); s.onerror=()=>{_cadP=null;ko(new Error("No se encontró cadena.js"));}; document.head.appendChild(s); });
+  return _cadP;
+}
+const CAD_LINK={o:["Misma partida de origen","El plano se hizo sobre este inmueble (coincide la partida)."],r:["Parcela resultante","La parcela figura en el croquis del plano."],p:["Probable","Misma parcela madre y partida asignada en el período del plano. Verificar en el plano."]};
+function cadenaData(p){
+  const C=window.CADENA; if(!C) return null;
+  const h=C.H[p.i]||0;
+  const pl=(C.PP[String(p.i)]||[]).map(([k,t])=>({...C.PL[k],t})).sort((a,b)=>b.y-a.y);
+  const mens=h?h[0].map(([j,pc])=>({m:C.M[j],pc})).sort((a,b)=>(b.m[1]||0)-(a.m[1]||0)):[];
+  const r=h&&h[1]?{d:C.R[h[1][0]],pc:h[1][1]}:null;
+  const u=h&&h[2]?{d:C.U[h[2][0]],pc:h[2][1]}:null;
+  const pch=(C.PCP&&C.PCP[String(p.i)]||[]).map(k=>C.PCH[k]);
+  return {pl,mens,r,u,pch};
+}
+function cadenaHTML(p){
+  const D=cadenaData(p); if(!D) return "";
+  const A=ATLAS_URL;
+  const item=(yr,title,body,extra)=>`<li class="cad-i"><span class="cad-y">${yr||"s/f"}</span><div class="cad-b"><b>${title}</b>${body?`<div>${body}</div>`:""}${extra||""}</div></li>`;
+  let h="";
+  // Planos municipales
+  h+=`<li class="cad-g">Planos de mensura municipales · 1945–2013</li>`;
+  if(D.pl.length) D.pl.forEach(x=>{ const L=CAD_LINK[x.t]||["",""];
+    h+=item(x.y,`Plano ${esc(x.n)}${x.obj?` · ${esc(x.obj)}`:""}`,`Origen: ${x.or.map(esc).join(" · ")}${x.lug?` <span class="hint">(${esc(x.lug)})</span>`:""}${x.ref&&x.ref.length?`<br>Antecedente citado: plano ${x.ref.map(esc).join(", ")}`:""}`,`<span class="cad-t ${x.t}" title="${esc(L[1])}">${esc(L[0])}</span>${x.c==="baja"?` <span class="cad-t p" title="El rótulo del plano se leyó con dificultad.">lectura dudosa</span>`:""}`); });
+  else h+=`<li class="cad-e">No se encontró un plano del archivo municipal (1945–2013) vinculado a esta parcela. Puede haberse formado antes de 1945, en un plano sin nomenclatura legible o en uno que no está en el archivo.</li>`;
+  // 1884 / 1874
+  if(D.u) h+=`<li class="cad-g">Planta urbana del pueblo · 1884</li>`+item(1884,`Solar de ${esc(D.u.d[0]||"propietario sin dato")}`,`Ocupación: ${esc((D.u.d[1]||"sin dato").toLowerCase())}${D.u.d[2]?` · ${fmt(D.u.d[2],0)} m²`:""}${D.u.pc<90?` <span class="hint">(cubre el ${D.u.pc} % de la parcela actual)</span>`:""}`);
+  if(D.r) h+=`<li class="cad-g">Registro gráfico · c. 1874</li>`+item(1874,`Parcela del registro gráfico`,`${D.r.d[3]?fmt(D.r.d[3],1)+" ha":""}${D.r.pc<90?` <span class="hint">(cubre el ${D.r.pc} % de la parcela actual)</span>`:""}`);
+  // Mensuras AHG
+  if(D.mens.length){
+    h+=`<li class="cad-g">Mensuras del Archivo Histórico de Geodesia · 1825–1923</li>`;
+    D.mens.forEach(({m,pc})=>{ const [n,y,tit,ag,ha,fi]=m;
+      h+=item(y,`Carpeta ${n??"s/n"}${tit?` · ${esc(tit)}`:""}`,`${ag?"Agrimensor: "+esc(ag)+" · ":""}${ha?fmt(ha,0)+" ha · ":""}${pc>=90?"comprende toda la parcela":`comprende el ${pc} % de la parcela`}`,
+        n!=null?`<span class="cad-l"><a href="${A}#m${n}" target="_blank" rel="noopener">Ver en el Atlas</a> · <a href="${A}#c${n}" target="_blank" rel="noopener">Carátula y plano</a>${fi?` · <a href="${A}archivo.html#f${n}" target="_blank" rel="noopener">Ficha transcripta</a>`:""}</span>`:""); });
+  }
+  return `<ol class="cad">${h}</ol>
+  <span class="hint">Las mensuras históricas se vinculan por superposición con los polígonos georreferenciados del <a href="${A}" target="_blank" rel="noopener">Atlas de Mensuras de Giles</a>: pueden tener corrimientos de varios metros y una parcela puede quedar en el borde de dos mensuras. Los planos municipales se vinculan por la nomenclatura y la partida de origen escritas en cada plano. Los planos de 1945–2013 incluyen datos personales: se consultan en la Dirección de Planeamiento y Obras Particulares.</span>`;
+}
+function planchetaHTML(p){
+  const D=cadenaData(p); if(!D||!D.pch.length) return `<span class="hint">No hay plancheta catastral cargada para esta ubicación.</span>`;
+  return D.pch.map(x=>`<figure class="pch"><a href="planchetas/${x.id}.png" target="_blank" rel="noopener" title="Abrir la plancheta completa"><img src="planchetas/${x.id}.png" alt="Plancheta ${esc(x.t)}" loading="lazy"></a>
+    <figcaption><b>${esc(x.t||"Plancheta")}</b>${x.a?` · ${esc(x.a)}`:""}${x.pl&&x.pl.length?`<br><span class="hint">Planos anotados: ${x.pl.map(esc).join(", ")}</span>`:""}<br><a href="planchetas/${x.id}.png" target="_blank" rel="noopener">Ver en tamaño completo</a> · <a href="planchetas/${x.id}.png" download="plancheta_${x.id}.png">Descargar</a></figcaption></figure>`).join("");
+}
+function renderCadena(p){
+  const el=$("informe"); if(!el) return;
+  let box=$("cad-sec");
+  if(!box){ box=document.createElement("section"); box.className="sec"; box.id="cad-sec";
+    const obl=[...el.querySelectorAll("section.sec")].find(s=>/Obligaciones y normas generales/.test(s.textContent));
+    obl?el.insertBefore(box,obl):el.appendChild(box); }
+  box.innerHTML=`<div class="eyebrow">Plancheta catastral</div><div id="pch-body"><span class="hint">Cargando…</span></div><div class="eyebrow" style="margin-top:12px">Cadena de mensuras</div><p class="hint" style="margin:0">De la parcela actual hacia atrás: los planos que la formaron y las mensuras históricas que cubrieron su suelo.</p><div id="cad-body"><span class="hint">Cargando…</span></div>`;
+  loadCadena().then(()=>{ if(S.sel!==p) return; const b=$("cad-body"); if(b) b.innerHTML=cadenaHTML(p); const c=$("pch-body"); if(c) c.innerHTML=planchetaHTML(p); })
+    .catch(()=>{ const b=$("cad-body"); if(b) b.innerHTML=`<span class="hint">No se pudo cargar la cadena de mensuras.</span>`; });
+}
+function cadenaInformeHTML(p){
+  const D=cadenaData(p); if(!D) return "";
+  const row=(a,b,c)=>`<tr><td style="width:60px" class="m">${a||"s/f"}</td><td><b>${b}</b>${c?`<div class="s">${c}</div>`:""}</td></tr>`;
+  let t="";
+  D.pl.forEach(x=>{ t+=row(x.y,`Plano ${esc(x.n)} · ${esc(x.obj)}`,`Origen: ${x.or.map(esc).join(" · ")}. Vínculo: ${esc((CAD_LINK[x.t]||[""])[0]).toLowerCase()}.`); });
+  if(D.u) t+=row(1884,`Planta urbana · solar de ${esc(D.u.d[0]||"s/d")}`,`Ocupación: ${esc((D.u.d[1]||"s/d").toLowerCase())}`);
+  if(D.r) t+=row(1874,`Registro gráfico · parcela de ${D.r.d[3]?fmt(D.r.d[3],1)+" ha":"superficie sin dato"}`,"");
+  D.mens.forEach(({m,pc})=>{ t+=row(m[1],`Carpeta ${m[0]??"s/n"} del Archivo Histórico de Geodesia${m[2]?" · "+esc(m[2]):""}`,`${m[3]?"Agrimensor: "+esc(m[3])+". ":""}${pc>=90?"Comprende toda la parcela.":`Comprende el ${pc} % de la parcela.`}`); });
+  const pc=D.pch.map(x=>`<figure><img src="${SITE_URL}planchetas/${x.id}.png" alt="Plancheta"><figcaption>Plancheta catastral ${esc(x.t)}${x.a?" ("+esc(x.a)+")":""}${x.pl&&x.pl.length?". Planos anotados: "+x.pl.map(esc).join(", "):""}</figcaption></figure>`).join("");
+  if(!t&&!pc) return "";
+  return `${pc}<table>${t}</table><p class="s">Mensuras históricas vinculadas por superposición con el Atlas de Mensuras de Giles (${ATLAS_URL}). Planos municipales (1945–2013) vinculados por nomenclatura y partida de origen leídas en cada plano.</p>`;
+}
+
+setTimeout(()=>{loadCadena().catch(()=>{})},2500);
 /* ============ Verificador de prefactibilidad del proyecto ============ */
 const VF_FIELDS=[["uso","Uso previsto"],["pb","Planta baja","m²"],["tot","Cubierta total","m²"],["pl","Plantas (con PB)"],["uv","Viviendas"],["dor","Dormitorios"],["abs","Suelo absorbente","m²"]];
 function verifChecks(p,f,c,v){
