@@ -5188,7 +5188,7 @@ function cadenaHTML(p){
   // Planos municipales
   h+=`<li class="cad-g">Planos de mensura municipales · 1945–2013</li>`;
   if(D.pl.length) D.pl.forEach(x=>{ const L=CAD_LINK[x.t]||["",""];
-    h+=item(x.y,`Plano ${esc(x.n)}${x.obj?` · ${esc(x.obj)}`:""}`,`Origen: ${x.or.map(esc).join(" · ")}${x.lug?` <span class="hint">(${esc(x.lug)})</span>`:""}${x.ref&&x.ref.length?`<br>Antecedente citado: plano ${x.ref.map(esc).join(", ")}`:""}`,`<span class="cad-t ${x.t}" title="${esc(L[1])}">${esc(L[0])}</span>${x.c==="baja"?` <span class="cad-t p" title="El rótulo del plano se leyó con dificultad.">lectura dudosa</span>`:""}`); });
+    h+=item(x.y,`Plano ${esc(x.n)}${x.obj?` · ${esc(x.obj)}`:""}`,`Origen: ${x.or.map(esc).join(" · ")}${x.lug?` <span class="hint">(${esc(x.lug)})</span>`:""}${x.ref&&x.ref.length?`<br>Antecedente citado: plano ${x.ref.map(esc).join(", ")}`:""}`,`<span class="cad-t ${x.t}" title="${esc(L[1])}">${esc(L[0])}</span>${x.c==="baja"?` <span class="cad-t p" title="El rótulo del plano se leyó con dificultad.">lectura dudosa</span>`:""}${x.g?`<span class="cad-l"><a href="https://drive.google.com/file/d/${x.g}/view" target="_blank" rel="noopener">Ver plano de mensura</a> <span class="hint">(se abre en el visor; desde ahí se puede descargar)</span></span>`:""}`); });
   else h+=`<li class="cad-e">No se encontró un plano del archivo municipal (1945–2013) vinculado a esta parcela. Puede haberse formado antes de 1945, en un plano sin nomenclatura legible o en uno que no está en el archivo.</li>`;
   // 1884 / 1874
   if(D.u) h+=`<li class="cad-g">Planta urbana del pueblo · 1884</li>`+item(1884,`Solar de ${esc(D.u.d[0]||"propietario sin dato")}`,`Ocupación: ${esc((D.u.d[1]||"sin dato").toLowerCase())}${D.u.d[2]?` · ${fmt(D.u.d[2],0)} m²`:""}${D.u.pc<90?` <span class="hint">(cubre el ${D.u.pc} % de la parcela actual)</span>`:""}`);
@@ -5201,7 +5201,7 @@ function cadenaHTML(p){
         n!=null?`<span class="cad-l"><a href="${A}#m${n}" target="_blank" rel="noopener">Ver en el Atlas</a> · <a href="${A}#c${n}" target="_blank" rel="noopener">Carátula y plano</a>${fi?` · <a href="${A}archivo.html#f${n}" target="_blank" rel="noopener">Ficha transcripta</a>`:""}</span>`:""); });
   }
   return `<ol class="cad">${h}</ol>
-  <span class="hint">Las mensuras históricas se vinculan por superposición con los polígonos georreferenciados del <a href="${A}" target="_blank" rel="noopener">Atlas de Mensuras de Giles</a>: pueden tener corrimientos de varios metros y una parcela puede quedar en el borde de dos mensuras. Los planos municipales se vinculan por la nomenclatura y la partida de origen escritas en cada plano. Los planos de 1945–2013 incluyen datos personales: se consultan en la Dirección de Planeamiento y Obras Particulares.</span>`;
+  <span class="hint">Las mensuras históricas se vinculan por superposición con los polígonos georreferenciados del <a href="${A}" target="_blank" rel="noopener">Atlas de Mensuras de Giles</a>: pueden tener corrimientos de varios metros y una parcela puede quedar en el borde de dos mensuras. Los planos municipales se vinculan por la nomenclatura y la partida de origen escritas en cada plano. Los planos de 1945–2013 contienen datos personales: se muestran de a uno, solo para la parcela consultada.</span>`;
 }
 function planchetaHTML(p){
   const D=cadenaData(p); if(!D||!D.pch.length) return `<span class="hint">No hay plancheta catastral cargada para esta ubicación.</span>`;
