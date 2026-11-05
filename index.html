@@ -5180,6 +5180,7 @@ function cadenaData(p){
   const pch=(C.PCP&&C.PCP[String(p.i)]||[]).map(k=>C.PCH[k]);
   return {pl,mens,r,u,pch};
 }
+function cadG(n){const C=window.CADENA;if(!C)return null;if(!C._g){C._g={};C.PL.forEach(q=>{if(q.g)C._g[q.n]=q.g;});}return C._g[n]||null;}
 function cadenaHTML(p){
   const D=cadenaData(p); if(!D) return "";
   const A=ATLAS_URL;
@@ -5188,7 +5189,7 @@ function cadenaHTML(p){
   // Planos municipales
   h+=`<li class="cad-g">Planos de mensura municipales · 1945–2013</li>`;
   if(D.pl.length) D.pl.forEach(x=>{ const L=CAD_LINK[x.t]||["",""];
-    h+=item(x.y,`Plano ${esc(x.n)}${x.obj?` · ${esc(x.obj)}`:""}`,`Origen: ${x.or.map(esc).join(" · ")}${x.lug?` <span class="hint">(${esc(x.lug)})</span>`:""}${x.ref&&x.ref.length?`<br>Antecedente citado: plano ${x.ref.map(esc).join(", ")}`:""}`,`<span class="cad-t ${x.t}" title="${esc(L[1])}">${esc(L[0])}</span>${x.c==="baja"?` <span class="cad-t p" title="El rótulo del plano se leyó con dificultad.">lectura dudosa</span>`:""}${x.g?`<span class="cad-l"><a href="https://drive.google.com/file/d/${x.g}/view" target="_blank" rel="noopener">Ver plano de mensura</a> <span class="hint">(se abre en el visor; desde ahí se puede descargar)</span></span>`:""}`); });
+    h+=item(x.y,`Plano ${esc(x.n)}${x.obj?` · ${esc(x.obj)}`:""}`,`Origen: ${x.or.map(esc).join(" · ")}${x.lug?` <span class="hint">(${esc(x.lug)})</span>`:""}${x.ref&&x.ref.length?`<br>Antecedente citado: plano ${x.ref.map(r=>{const g=cadG(r);return g?`<a href="https://drive.google.com/file/d/${g}/view" target="_blank" rel="noopener">${esc(r)}</a>`:`${esc(r)} <span class="hint">(sin imagen disponible)</span>`}).join(", ")}`:""}`,`<span class="cad-t ${x.t}" title="${esc(L[1])}">${esc(L[0])}</span>${x.c==="baja"?` <span class="cad-t p" title="El rótulo del plano se leyó con dificultad.">lectura dudosa</span>`:""}${x.g?`<span class="cad-l"><a href="https://drive.google.com/file/d/${x.g}/view" target="_blank" rel="noopener">Ver plano de mensura</a> <span class="hint">(se abre en el visor; desde ahí se puede descargar)</span></span>`:`<span class="cad-l hint">${x.v?"Plano digital vectorial: imagen en preparación.":"Imagen del plano no disponible."} Consultar en la Dirección de Planeamiento y Obras Particulares.</span>`}`); });
   else h+=`<li class="cad-e">No se encontró un plano del archivo municipal (1945–2013) vinculado a esta parcela. Puede haberse formado antes de 1945, en un plano sin nomenclatura legible o en uno que no está en el archivo.</li>`;
   // 1884 / 1874
   if(D.u) h+=`<li class="cad-g">Planta urbana del pueblo · 1884</li>`+item(1884,`Solar de ${esc(D.u.d[0]||"propietario sin dato")}`,`Ocupación: ${esc((D.u.d[1]||"sin dato").toLowerCase())}${D.u.d[2]?` · ${fmt(D.u.d[2],0)} m²`:""}${D.u.pc<90?` <span class="hint">(cubre el ${D.u.pc} % de la parcela actual)</span>`:""}`);
