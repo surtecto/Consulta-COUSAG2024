@@ -185,7 +185,7 @@ aside.panel .sec{padding:12px 16px}
 .icard .why{grid-column:1/-1;font-size:12.5px;color:var(--ink-2);line-height:1.35}
 .icard .fit{font-size:11px;font-weight:700;padding:1px 6px;border-radius:3px;background:var(--ok-soft);color:var(--ok);white-space:nowrap}
 .icard .nofit{background:var(--warn-soft);color:var(--warn)}
-.main-tabs{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--line);background:var(--surface);position:sticky;top:0;z-index:5}
+.main-tabs{display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid var(--line);background:var(--surface);position:sticky;top:0;z-index:5}
 .main-tabs button{border:0;background:transparent;padding:12px 10px;font-weight:600;font-size:14px;color:var(--ink-2);cursor:pointer;border-bottom:3px solid transparent;text-align:center}
 .main-tabs button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
 .fgrid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -226,6 +226,13 @@ select[size] option{padding:3px 4px}
 .cad-t{display:inline-block;margin-top:3px;font-size:11.5px;font-weight:600;padding:1px 7px;border-radius:999px;cursor:help}
 .cad-t.o,.cad-t.r{background:var(--ok-soft);color:var(--ok)}.cad-t.p{background:var(--warn-soft);color:var(--warn)}
 .cad-l{display:block;margin-top:2px;font-size:12.5px}.cad-l a{color:var(--accent)}
+.plx-f{display:grid;grid-template-columns:1fr 1fr;gap:8px}.plx-f .fld:first-child{grid-column:1/-1}
+.plx{list-style:none;margin:8px 0 0;padding:0}.plx>li{border-top:1px solid var(--line);padding:10px 0}
+.plx h4{margin:0;font-size:14px}.plx h4 span{font-weight:400;color:var(--ink-2)}.plx .d{font-size:13px;margin-top:3px}
+.plx .a{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:6px;font-size:12.5px}.plx .a a,.plx .a button{color:var(--accent);background:none;border:0;padding:0;font:inherit;cursor:pointer;text-decoration:underline}
+.plx .loc{font-size:12.5px;margin-top:4px;color:var(--ink-2)}
+.plx-tt{font-size:12px;font-weight:600}
+.plx .d button{color:var(--accent);background:none;border:0;padding:0;font:inherit;cursor:pointer;text-decoration:underline}
 .cad-e{margin:2px 0 6px;font-size:13px;color:var(--ink-3)}
 .pch{margin:6px 0 10px}.pch img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:4px;background:#fff}.pch figcaption{font-size:13px;margin-top:4px;line-height:1.45}.pch figcaption a{color:var(--accent)}
 .sector{border-left:3px solid var(--warn);padding-left:10px;margin-top:6px}
@@ -312,6 +319,7 @@ dialog::backdrop{background:rgba(10,20,24,.45)}
     <nav class="main-tabs" role="tablist" aria-label="Secciones">
       <button role="tab" id="mt-consulta" aria-selected="true">Consultar una parcela</button>
       <button role="tab" id="mt-act" aria-selected="false">Buscar lugar para una actividad</button>
+      <button role="tab" id="mt-pl" aria-selected="false">Planos sin ubicar</button>
     </nav>
     <div id="pane-consulta">
     <section class="sec" aria-labelledby="q-t">
@@ -388,6 +396,21 @@ dialog::backdrop{background:rgba(10,20,24,.45)}
         <div class="row"><button class="btn primary" type="button" id="a-go">Buscar parcelas</button><button class="btn" type="button" id="a-clear">Limpiar</button></div>
       </section>
       <div id="a-res"></div>
+    </div>
+    <div id="pane-pl" hidden>
+      <section class="sec">
+        <div class="eyebrow">Planos de mensura sin parcela vinculada · 1945–2013</div>
+        <p class="prose muted" style="margin:0;font-size:14px">Planos del archivo municipal que todavía no pudimos asociar a una parcela actual: muchos crearon parcelas que después cambiaron de número, o solo traen la nomenclatura de origen. Para cada uno se indica lo que dice el rótulo y la zona del parcelario actual que le corresponde, para ubicarlo en el plano.</p>
+        <div class="plx-f" style="margin-top:10px">
+          <label class="fld">Buscar <input type="text" id="plx-q" placeholder="Número, objeto, lugar o nomenclatura (ej.: 94-46-1952, quinta 12, Azcuénaga)" autocomplete="off"></label>
+          <label class="fld">Década <select id="plx-d"><option value="">Todas</option></select></label>
+          <label class="fld">Circunscripción <select id="plx-c"><option value="">Todas</option></select></label>
+        </div>
+        <div id="plx-n" class="hint" style="margin-top:8px">Cargando…</div>
+        <ol class="plx" id="plx-l"></ol>
+        <button class="btn" type="button" id="plx-more" hidden>Ver más</button>
+        <p class="hint">La zona es aproximada: se arma con las parcelas actuales que conservan la nomenclatura de origen del plano. Los planos se siguen leyendo y vinculando; esta lista se achica a medida que se identifican sus parcelas.</p>
+      </section>
     </div>
   </aside>
 
@@ -4735,10 +4758,9 @@ function renderActResults(){
   };
 }
 function setMainTab(t){
-  const act=t==="act";
-  $("mt-consulta").setAttribute("aria-selected",!act); $("mt-act").setAttribute("aria-selected",act);
-  $("pane-consulta").hidden=act; $("pane-act").hidden=!act;
+  ["consulta","act","pl"].forEach(k=>{ $("mt-"+k).setAttribute("aria-selected",t===k); $("pane-"+k).hidden=t!==k; });
   document.querySelector("aside.panel").scrollTop=0;
+  if(t==="pl") plxInit();
 }
 function openFromAct(p){
   setMainTab("consulta"); $("back-act").hidden=false; selectParcel(p,true);
@@ -4746,6 +4768,7 @@ function openFromAct(p){
   if(r && S.act){ S.useQ=S.act.code; renderInforme._touched=true; S.useFilter="all"; renderInforme(p); }
 }
 $("mt-consulta").onclick=()=>setMainTab("consulta");
+$("mt-pl").onclick=()=>setMainTab("pl");
 $("mt-act").onclick=()=>{ setMainTab("act"); if(S.act && S.mode!=="act") setMode("act"); };
 $("b-back").onclick=()=>{ setMainTab("act"); S.useQ=""; if(S.mode!=="act"&&S.act) setMode("act"); };
 $("a-f").oninput=()=>{ fillUsoSelects(); };
@@ -5231,6 +5254,126 @@ function cadenaInformeHTML(p){
   if(!t&&!pc) return "";
   return `${pc}<table>${t}</table><p class="s">Mensuras históricas vinculadas por superposición con el Atlas de Mensuras de Giles (${ATLAS_URL}). Planos municipales (1945–2013) vinculados por nomenclatura y partida de origen leídas en cada plano.</p>`;
 }
+/* ============ Planos sin ubicar ============ */
+const PLX={ok:false,list:[],shown:0,zone:null};
+function plxParseOr(s){
+  const g=(re)=>{ const m=s.match(re); return m?m[1].trim():""; };
+  const o={c:g(/Circ\.\s*([IVXL]+)/i), s:g(/Secc\.\s*([A-Za-z]+)/), ch:g(/Ch\.\s*([\w-]+)/), q:g(/Qta\.\s*([\w-]+)/), fr:g(/Fr\.\s*([\w-]+)/), mz:g(/Mz\.\s*([\w-]+)/)};
+  const pc=g(/Parc\.\s*(.+)$/); o.pc=pc?pc.split(/\s*,\s*|\s+y\s+/).map(x=>x.trim()).filter(Boolean):[];
+  if(/^r(ural)?$/i.test(o.s)) o.s="";
+  return o;
+}
+const plxN=x=>String(x||"").trim().toLowerCase().replace(/^0+(?=\w)/,"");
+const plxC=x=>{ const v=plxN(x); if(/^[ivxl]+$/.test(v)){ const r={i:1,v:5,x:10,l:50}; let t=0; for(let i=0;i<v.length;i++){ const p=r[v[i]],q=r[v[i+1]]||0; t+=p<q?-p:p; } return String(t); } return v; };
+function plxLocate(o){
+  if(!o.c||!S.parcels) return null;
+  const c=o.c.toUpperCase();
+  let base=S.parcels.filter(p=>(p.n[0]||"").toUpperCase()===c && (!o.s || (p.n[1]||"").toUpperCase()===o.s.toUpperCase()) && (o.s || !p.n[1]));
+  if(!base.length) return null;
+  const lv=[["ch",2,"chacra"],["q",3,"quinta"],["fr",4,"fracción"],["mz",5,"manzana"]].filter(([k])=>o[k]);
+  let set=base, lab=`Circ. ${c}${o.s?" Secc. "+o.s:" (sección rural)"}`, full=!lv.length, got=0;
+  for(let n=lv.length;n>0;n--){
+    const use=lv.slice(0,n);
+    const m=base.filter(p=>use.every(([k,i])=>plxC(p.n[i])===plxC(o[k])));
+    if(m.length){ set=m; got=n; full=n===lv.length; lab+=use.map(([k,,t])=>` ${t} ${o[k]}`).join(""); break; }
+  }
+  if(!full){ const miss=lv.slice(got).map(([k,,t])=>`${t} ${o[k]}`).join(", "); lab+=` (la ${miss} ya no figura en el parcelario actual)`; }
+  const pcs=o.pc.map(x=>plxN(x).replace(/[a-z]+$/,""));
+  const exact=o.pc.length&&full?set.filter(p=>pcs.includes(plxN(p.n[6]).replace(/[a-z]+$/,""))):[];
+  const wide=set===base;
+  if(wide && !exact.length && !lv.length && !o.s){
+    const nums=pcs.map(Number).filter(n=>n>0);
+    if(nums.length){ const near=base.filter(p=>{ const v=+plxN(p.n[6]).replace(/[a-z]+$/,""); return v && nums.some(n=>Math.abs(v-n)<=6); });
+      const cen=p=>{ const b=pbb(p); return [(b[0]+b[2])/2,(b[1]+b[3])/2]; };
+      const med=a=>{ const v=[...a].sort((x,y)=>x-y); return v[v.length>>1]; };
+      const cs=near.map(cen), mx=med(cs.map(c=>c[0])), my=med(cs.map(c=>c[1]));
+      const nearC=near.filter((p,i)=>Math.hypot((cs[i][0]-mx)*92,(cs[i][1]-my)*111)<=1.8);
+      if(nearC.length) return {set:nearC,lab:lab+` · zona estimada por las parcelas actuales de numeración vecina a ${o.pc.join(", ")}`,exact:[],wide:false,near:true}; }
+  }
+  return {set,lab,exact,wide};
+}
+function plxParcelsOfPlan(k){ if(!PLX.byI){ PLX.byI={}; S.parcels.forEach(p=>PLX.byI[p.i]=p); } return (PLX.byPlan[k]||[]).map(i=>PLX.byI[i]).filter(Boolean); }
+function plxBest(o){
+  const x=o.x; const locs=(x.or||[]).map(plxParseOr).map(plxLocate).filter(Boolean);
+  const good=locs.find(l=>l.exact.length)||locs.find(l=>!l.wide);
+  if(good) return good;
+  for(const r of (x.ref||[])){ const k=PLX.idx[r]; if(k!=null && PLX.byPlan[k]){ const ps=plxParcelsOfPlan(k); if(ps.length) return {set:ps,lab:`parcelas del plano antecedente ${r}`,exact:[],wide:false}; } }
+  if(o.cb.length){ const ps=plxParcelsOfPlan(o.cb[0]); if(ps.length) return {set:ps,lab:`parcelas del plano ${window.CADENA.PL[o.cb[0]].n}, que lo cita como antecedente`,exact:[],wide:false}; }
+  if(locs[0]) return locs[0];
+  const pcs=[]; (x.or||[]).forEach(z=>{ const m=z.match(/Parc\.\s*(.+)$/); if(m) pcs.push(...m[1].split(/\s*,\s*/)); });
+  const q=(x.lug||"").match(/Cuartel\s*(\d+)/i);
+  if(q){ const n=+q[1]; const c=n===6?"VII":ROMAN[n+1];
+    if(c){ const l=plxLocate({c,s:"",ch:"",q:"",fr:"",mz:"",pc:pcs}); if(l){ l.lab=`Cuartel ${n} ≈ Circ. ${c} rural (equivalencia aproximada de cuarteles)`+(l.near?" · numeración vecina a "+pcs.join(", "):""); return l; } } }
+  if(/planta urbana|urbano|pueblo/i.test(x.lug||"")){ const set=S.parcels.filter(p=>p.n[0]==="I"&&p.n[1]); if(set.length) return {set,lab:"Planta urbana (Circ. I) · sin manzana identificada",exact:[],wide:true}; }
+  return null;
+}
+function plxInit(){
+  const el=$("plx-l"); if(!el) return;
+  if(PLX.ok){ plxRender(); return; }
+  loadCadena().then(C=>{
+    const linked=new Set(); const byPlan={};
+    Object.entries(C.PP).forEach(([i,v])=>v.forEach(([k])=>{ linked.add(k); (byPlan[k]=byPlan[k]||[]).push(+i); }));
+    const idx={}; C.PL.forEach((x,k)=>idx[x.n]=k);
+    const citedBy={}; C.PL.forEach((x,k)=>(x.ref||[]).forEach(r=>{ if(idx[r]!=null) (citedBy[r]=citedBy[r]||[]).push(k); }));
+    PLX.byPlan=byPlan; PLX.idx=idx;
+    PLX.list=C.PL.map((x,k)=>({x,k})).filter(({k})=>!linked.has(k)).map(o=>{ o.cb=(citedBy[o.x.n]||[]).filter(k=>linked.has(k)); o.o=(o.x.or||[]).map(plxParseOr); o.txt=[o.x.n,o.x.obj,o.x.lug,...(o.x.or||[])].join(" ").toLowerCase(); return o; })
+      .sort((a,b)=>a.x.y-b.x.y||(+a.x.n.split("-")[1])-(+b.x.n.split("-")[1]));
+    const dec=[...new Set(PLX.list.map(o=>Math.floor(o.x.y/10)*10))].sort();
+    $("plx-d").innerHTML=`<option value="">Todas</option>`+dec.map(d=>`<option value="${d}">${d}–${d+9}</option>`).join("");
+    const cs=[...new Set(PLX.list.flatMap(o=>o.o.map(z=>z.c.toUpperCase())).filter(Boolean))];
+    const rv={I:1,V:5,X:10,L:50}; const r2n=r=>{let t=0;for(let i=0;i<r.length;i++){const a=rv[r[i]],b=rv[r[i+1]]||0;t+=a<b?-a:a;}return t;};
+    cs.sort((a,b)=>r2n(a)-r2n(b));
+    $("plx-c").innerHTML=`<option value="">Todas</option>`+cs.map(c=>`<option>${c}</option>`).join("");
+    PLX.ok=true; plxRender();
+  }).catch(()=>{ $("plx-n").textContent="No se pudo cargar el índice de planos."; });
+}
+function plxFilter(){
+  const q=$("plx-q").value.trim().toLowerCase(), d=$("plx-d").value, c=$("plx-c").value;
+  const qq=q.split(/\s+/).filter(Boolean).map(w=>w.replace(/^(qta|quinta)\.?$/,"qta").replace(/^(mz|manzana)\.?$/,"mz").replace(/^(ch|chacra)\.?$/,"ch"));
+  return PLX.list.filter(o=>(!d||Math.floor(o.x.y/10)*10==d) && (!c||o.o.some(z=>z.c.toUpperCase()===c)) && qq.every(w=>o.txt.includes(w)));
+}
+function plxRender(more){
+  const L0=plxFilter(); if(!more) PLX.shown=0;
+  const page=L0.slice(PLX.shown,PLX.shown+40); PLX.shown+=page.length; PLX.cur=L0;
+  $("plx-n").textContent=`${L0.length} de ${PLX.list.length} planos sin parcela vinculada`;
+  const C=window.CADENA;
+  const html=page.map(o=>{ const x=o.x;
+    const loc=plxBest(o);
+    const ver=x.g?`<a href="https://drive.google.com/file/d/${x.g}/view" target="_blank" rel="noopener">Ver plano</a>`:`<span class="hint">${x.v?"Imagen en preparación":"Sin imagen"}</span>`;
+    const refs=(x.ref||[]).map(r=>{ const g=cadG(r); return g?`<a href="https://drive.google.com/file/d/${g}/view" target="_blank" rel="noopener">${esc(r)}</a>`:esc(r); }).join(", ");
+    const cb=o.cb.slice(0,4).map(k=>`<button type="button" data-plx-plan="${k}">${esc(C.PL[k].n)}</button>`).join(", ");
+    return `<li><h4>Plano ${esc(x.n)} <span>· ${x.y}</span></h4>
+      <div class="d">${esc(x.obj||"Objeto sin dato")}${x.lug?` <span class="hint">(${esc(x.lug)})</span>`:""}</div>
+      ${x.or&&x.or.length?`<div class="d">Origen: ${x.or.map(esc).join(" · ")}</div>`:""}
+      ${refs?`<div class="d">Antecedente citado: plano ${refs}</div>`:""}
+      ${cb?`<div class="d">Citado como antecedente por: ${cb} <span class="hint">(planos ya ubicados: tocá para ver sus parcelas)</span></div>`:""}
+      ${loc?`<div class="loc">Zona aproximada: ${esc(loc.lab)}${loc.exact.length?` · ${loc.exact.length===1?"existe una parcela actual":"existen "+loc.exact.length+" parcelas actuales"} con el número de origen`:""}${loc.wide?" (zona amplia)":""}</div>`:`<div class="loc">Sin nomenclatura de origen legible para ubicarlo.</div>`}
+      <div class="a">${ver}${loc?`<button type="button" data-plx-loc="${o.k}">Ubicar en el mapa</button>`:""}${loc&&loc.exact.length?`<button type="button" data-plx-open="${o.k}">Abrir parcela de origen</button>`:""}</div></li>`; }).join("");
+  if(more) $("plx-l").insertAdjacentHTML("beforeend",html); else $("plx-l").innerHTML=html;
+  $("plx-more").hidden=PLX.shown>=L0.length;
+}
+function plxZone(ps,label){
+  if(!S.map||!ps.length) return;
+  let b=null; ps.forEach(p=>{ const bb=pbb(p); const lb=L.latLngBounds([bb[1],bb[0]],[bb[3],bb[2]]); b=b?b.extend(lb):lb; });
+  if(PLX.zone) PLX.zone.remove();
+  const col=getComputedStyle(document.documentElement).getPropertyValue("--accent").trim()||"#e0a800";
+  PLX.zone=L.rectangle(b,{color:col,weight:2,dashArray:"6 5",fill:true,fillOpacity:.06,interactive:false}).addTo(S.map);
+  if(label) PLX.zone.bindTooltip(label,{permanent:true,direction:"top",className:"plx-tt"}).openTooltip();
+  S.map.flyToBounds(b,{padding:[40,40],maxZoom:17,duration:.6});
+  if(matchMedia("(max-width:900px)").matches){ const m=$("map"); m&&m.scrollIntoView({behavior:"smooth",block:"start"}); }
+}
+document.addEventListener("click",e=>{
+  const t=e.target.closest("[data-plx-loc],[data-plx-open],[data-plx-plan]"); if(!t) return;
+  const C=window.CADENA; if(!C) return;
+  if(t.dataset.plxPlan!=null){ const k=+t.dataset.plxPlan; const byI={}; S.parcels.forEach(p=>byI[p.i]=p);
+    const ps=(PLX.byPlan[k]||[]).map(i=>byI[i]).filter(Boolean); plxZone(ps,`Parcelas del plano ${C.PL[k].n}`); return; }
+  const k=+(t.dataset.plxLoc??t.dataset.plxOpen); const x=C.PL[k];
+  const o=PLX.list.find(z=>z.k===k); const loc=o&&plxBest(o); if(!loc) return;
+  if(t.dataset.plxOpen!=null && loc.exact.length){ setMainTab("consulta"); selectParcel(loc.exact[0],true); return; }
+  plxZone(loc.exact.length?loc.exact:loc.set,`Plano ${x.n} · ${loc.lab}`);
+});
+["plx-q","plx-d","plx-c"].forEach(id=>{ const el=$(id); el&&el.addEventListener(id==="plx-q"?"input":"change",()=>{ clearTimeout(PLX._t); PLX._t=setTimeout(()=>plxRender(),150); }); });
+$("plx-more").onclick=()=>plxRender(true);
 
 setTimeout(()=>{loadCadena().catch(()=>{})},2500);
 /* ============ Verificador de prefactibilidad del proyecto ============ */
