@@ -5281,7 +5281,7 @@ function plxLocate(o){
   const pcs=o.pc.map(x=>plxN(x).replace(/[a-z]+$/,""));
   const exact=o.pc.length&&full?set.filter(p=>pcs.includes(plxN(p.n[6]).replace(/[a-z]+$/,""))):[];
   const wide=set===base;
-  if(wide && !exact.length && !lv.length && !o.s){
+  if(false && wide && !exact.length && !lv.length && !o.s){ /* numeración vecina: descartado, poco confiable */
     const nums=pcs.map(Number).filter(n=>n>0);
     if(nums.length){ const near=base.filter(p=>{ const v=+plxN(p.n[6]).replace(/[a-z]+$/,""); return v && nums.some(n=>Math.abs(v-n)<=6); });
       const cen=p=>{ const b=pbb(p); return [(b[0]+b[2])/2,(b[1]+b[3])/2]; };
