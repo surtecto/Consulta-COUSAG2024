@@ -1,0 +1,2004 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#211B3D">
+<title>Estimador de Expediente de Obra Giles</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: la foto aérea del pueblo al atardecer abre la página y da la paleta: tinta de anochecer, naranja de horizonte
+   para lo que hay que tocar y para el total, lila de bruma de fondo. A la izquierda se completa la obra en tres pasos;
+   a la derecha queda fija la estimación sobre fondo de anochecer, con una barra que muestra cómo se reparte el costo.
+   Los colores de estado son los del plano municipal: carmín lo que se construye, rayado lo existente, amarillo lo que se demuele. */
+:root{
+  --papel:#F3F0F5; --hoja:#FFFFFF; --tinta:#1D1A33; --tinta-2:#5E5873; --linea:#D8D2E0;
+  --sol:#F08238; --sol-claro:#FFC08F; --sol-suave:#FDEBDD;
+  --acento:#5440B0; --acento-suave:#ECE8FA;
+  --noche:#211B3D; --noche-tinta:#F3EEF8; --noche-tinta-2:#BBB3D1; --noche-linea:#4A4070;
+  --verde:#0E7A5F; --carmin:#B4232C; --amarillo:#D6A100; --aviso:#8A5A00; --aviso-fondo:#FBF1D6;
+  --c1:#F08238; --c2:#E0567E; --c3:#9B86F0; --c4:#F2C14E;
+  --display:"Archivo","Arial Narrow",Arial,sans-serif;
+  --texto:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  --cifra:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:8px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --papel:#13101E; --hoja:#1D192D; --tinta:#EEEAF4; --tinta-2:#A9A2BD; --linea:#38304F;
+    --sol:#F6914A; --sol-claro:#FFC08F; --sol-suave:#3A2415;
+    --acento:#B9A8FF; --acento-suave:#2A2350;
+    --noche:#2A2350; --noche-tinta:#F3EEF8; --noche-tinta-2:#BBB3D1; --noche-linea:#51467C;
+    --verde:#5AD1A7; --carmin:#F0717A; --amarillo:#EDBF3B; --aviso:#F0CB6B; --aviso-fondo:#33290F;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --papel:#13101E; --hoja:#1D192D; --tinta:#EEEAF4; --tinta-2:#A9A2BD; --linea:#38304F;
+  --sol:#F6914A; --sol-claro:#FFC08F; --sol-suave:#3A2415;
+  --acento:#B9A8FF; --acento-suave:#2A2350;
+  --noche:#2A2350; --noche-tinta:#F3EEF8; --noche-tinta-2:#BBB3D1; --noche-linea:#51467C;
+  --verde:#5AD1A7; --carmin:#F0717A; --amarillo:#EDBF3B; --aviso:#F0CB6B; --aviso-fondo:#33290F;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--papel);color:var(--tinta);font-family:var(--texto);font-size:16px;line-height:1.5}
+a{color:var(--acento);text-underline-offset:3px}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--acento);outline-offset:2px;border-radius:3px}
+.pagina{max-width:1180px;margin:0 auto;padding:28px 20px 120px;display:flex;flex-direction:column;gap:28px}
+
+/* Encabezado */
+.cab{display:flex;flex-direction:column;gap:10px;border-bottom:2px solid var(--tinta);padding-bottom:20px}
+.sobre{font-family:var(--cifra);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--tinta-2);margin:0}
+h1{font-family:var(--display);font-stretch:112%;font-weight:750;font-size:clamp(1.75rem,4.2vw,2.75rem);line-height:1.06;margin:0;text-wrap:balance;max-width:20ch;letter-spacing:-.01em}
+.bajada{margin:0;max-width:66ch;color:var(--tinta-2);font-size:1.02rem}
+.vigencia{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.dato{font-family:var(--cifra);font-size:12.5px;border:1px solid var(--linea);background:var(--hoja);padding:4px 9px;border-radius:999px;white-space:nowrap}
+.dato b{font-weight:600}
+
+/* Dos columnas */
+.cuerpo{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:28px;align-items:start}
+.form{display:flex;flex-direction:column;gap:18px;min-width:0}
+.bloque{background:var(--hoja);border:1px solid var(--linea);border-radius:var(--r);padding:18px 18px 20px;display:flex;flex-direction:column;gap:14px}
+.bloque[hidden]{display:none}
+.bloque h2{font-family:var(--display);font-weight:700;font-stretch:108%;font-size:1.12rem;margin:0;display:flex;gap:10px;align-items:baseline;text-wrap:balance}
+.paso{font-family:var(--cifra);font-weight:500;font-size:.8rem;color:var(--acento);flex:none}
+.ayuda{margin:0;color:var(--tinta-2);font-size:.92rem;max-width:64ch}
+.ejemplos{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ejemplos span{font-size:.85rem;color:var(--tinta-2)}
+.chip{border:1px solid var(--linea);background:transparent;border-radius:999px;padding:5px 12px;font-size:.86rem;cursor:pointer}
+.chip:hover{border-color:var(--acento);color:var(--acento)}
+
+/* Partes de la obra */
+.partes{display:flex;flex-direction:column;gap:10px}
+.parte{border:1px solid var(--linea);border-left-width:6px;border-radius:var(--r);padding:12px 12px 12px 14px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px 12px;background:var(--papel)}
+.parte[data-sit="construir"]{border-left-color:var(--carmin)}
+.parte[data-sit="existente"]{border-left-color:var(--tinta);border-left-style:double}
+.parte[data-sit="demoler"]{border-left-color:var(--amarillo)}
+.parte .c-destino{grid-column:1 / -1}
+.parte .c-sit{grid-column:span 2}
+.parte .pie{grid-column:1 / -1;display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:.86rem;color:var(--tinta-2);flex-wrap:wrap}
+.parte .pie b{font-family:var(--cifra);font-weight:500;color:var(--tinta)}
+.campo{display:flex;flex-direction:column;gap:4px;min-width:0}
+.campo label,.rotulo{font-size:.8rem;font-weight:600;color:var(--tinta-2)}
+input[type="number"],select{width:100%;min-width:0;background:var(--hoja);border:1px solid var(--linea);border-radius:4px;padding:8px 9px;min-height:40px}
+input[type="number"]{font-family:var(--cifra);font-variant-numeric:tabular-nums}
+.quitar{border:0;background:transparent;color:var(--tinta-2);cursor:pointer;text-decoration:underline;padding:4px 0;font-size:.86rem}
+.quitar:hover{color:var(--carmin)}
+.agregar{align-self:flex-start;border:1px dashed var(--acento);color:var(--acento);background:transparent;border-radius:var(--r);padding:9px 14px;cursor:pointer;font-weight:600}
+.agregar:hover{background:var(--acento-suave)}
+.leyenda{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.84rem;color:var(--tinta-2);margin:0;padding:0;list-style:none}
+.leyenda li{display:flex;align-items:center;gap:6px}
+.m{width:14px;height:14px;border-radius:2px;flex:none;border:1px solid var(--tinta)}
+.m.construir{background:var(--carmin);border-color:var(--carmin)}
+.m.existente{background:repeating-linear-gradient(45deg,var(--tinta) 0 1.5px,transparent 1.5px 5px)}
+.m.demoler{background:var(--amarillo);border-color:var(--amarillo)}
+.m.aprobado{background:var(--tinta)}
+
+.fila{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.opciones{display:flex;flex-direction:column;gap:8px;border:0;padding:0;margin:0}
+.opciones legend{padding:0;margin-bottom:6px}
+.op{display:flex;gap:10px;align-items:flex-start;padding:9px 11px;border:1px solid var(--linea);border-radius:var(--r);cursor:pointer}
+.op:has(input:checked){border-color:var(--acento);background:var(--acento-suave)}
+.op input{margin:4px 0 0;accent-color:var(--acento);flex:none;width:16px;height:16px}
+.op span{display:flex;flex-direction:column;font-size:.94rem}
+.op small{color:var(--tinta-2);font-size:.84rem}
+
+/* Liquidación */
+.liq{position:sticky;top:16px;background:var(--hoja);border:1px solid var(--tinta);border-radius:var(--r);padding:20px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.liq h2{font-family:var(--display);font-stretch:108%;font-weight:700;font-size:1.12rem;margin:0}
+.total{display:flex;flex-direction:column;gap:2px;border-bottom:2px solid var(--tinta);padding-bottom:14px}
+.total .rot{font-size:.8rem;font-weight:600;color:var(--tinta-2);text-transform:uppercase;letter-spacing:.06em}
+.total .num{font-family:var(--cifra);font-weight:600;font-size:clamp(1.7rem,3.4vw,2.3rem);font-variant-numeric:tabular-nums;line-height:1.1;overflow-wrap:anywhere}
+.total .sub{font-size:.86rem;color:var(--tinta-2)}
+.grupo{display:flex;flex-direction:column;gap:6px}
+.grupo h3{font-size:.78rem;text-transform:uppercase;letter-spacing:.07em;color:var(--acento);margin:0;font-weight:600;display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.grupo h3 span{font-family:var(--cifra);color:var(--tinta);letter-spacing:0;font-size:.9rem;font-variant-numeric:tabular-nums;white-space:nowrap}
+.renglon{display:flex;align-items:baseline;gap:6px;font-size:.92rem}
+.renglon .con{min-width:0}
+.renglon .con small{display:block;color:var(--tinta-2);font-size:.8rem}
+.renglon .pts{flex:1;border-bottom:1px dotted var(--tinta-2);min-width:14px;transform:translateY(-4px);opacity:.6}
+.renglon .imp{font-family:var(--cifra);font-variant-numeric:tabular-nums;white-space:nowrap}
+.renglon.pend .imp{font-family:var(--texto);font-size:.8rem;background:var(--aviso-fondo);color:var(--aviso);padding:1px 7px;border-radius:999px}
+.renglon.tachado .imp{text-decoration:line-through;color:var(--tinta-2)}
+.vacio{color:var(--tinta-2);font-size:.92rem;margin:0}
+.nota{background:var(--aviso-fondo);color:var(--aviso);border-radius:var(--r);padding:10px 12px;font-size:.86rem;margin:0}
+.acciones{display:flex;flex-wrap:wrap;gap:8px}
+.btn{border:1px solid var(--tinta);background:var(--tinta);color:var(--hoja);border-radius:var(--r);padding:9px 14px;cursor:pointer;font-weight:600;font-size:.92rem}
+.btn.sec{background:transparent;color:var(--tinta)}
+.chk{display:flex;gap:9px;align-items:flex-start;font-size:.86rem;color:var(--tinta-2);cursor:pointer}
+.chk input{margin-top:3px;accent-color:var(--acento);width:16px;height:16px;flex:none}
+
+/* Método y fuentes */
+.metodo{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px}
+.metodo article{background:var(--hoja);border:1px solid var(--linea);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.metodo h3{font-family:var(--display);font-weight:700;font-size:1.02rem;margin:0;text-wrap:balance}
+.metodo p,.metodo li{font-size:.92rem;margin:0;max-width:62ch}
+.metodo ul{margin:0;padding-left:1.1em;display:flex;flex-direction:column;gap:6px}
+.formula{font-family:var(--cifra);font-size:.82rem;background:var(--papel);border-radius:4px;padding:8px 10px;overflow-x:auto;white-space:nowrap}
+.tabla{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.86rem}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--linea);white-space:nowrap}
+td.n,th.n{text-align:right;font-family:var(--cifra);font-variant-numeric:tabular-nums}
+td:first-child,th:first-child{white-space:normal}
+th{font-size:.74rem;text-transform:uppercase;letter-spacing:.06em;color:var(--tinta-2);font-weight:600}
+h2.sec{font-family:var(--display);font-stretch:110%;font-weight:750;font-size:1.4rem;margin:8px 0 0}
+footer{border-top:1px solid var(--linea);padding-top:16px;color:var(--tinta-2);font-size:.86rem;display:flex;flex-direction:column;gap:6px}
+footer p{margin:0;max-width:80ch}
+
+/* Barra de total en teléfono */
+.barra{display:none}
+@media (max-width:900px){
+  .cuerpo{grid-template-columns:minmax(0,1fr)}
+  .liq{position:static}
+  .barra{display:flex;position:fixed;left:0;right:0;bottom:0;background:var(--tinta);color:var(--hoja);padding:10px 20px;justify-content:space-between;align-items:center;gap:12px;z-index:5}
+  .barra span{font-size:.8rem;opacity:.85}
+  .barra b{font-family:var(--cifra);font-size:1.15rem;font-variant-numeric:tabular-nums}
+  .barra a{color:inherit;font-size:.86rem}
+}
+@media (max-width:520px){
+  .parte{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .parte .c-sit{grid-column:1 / -1}
+  .bloque,.liq{padding:16px 14px}
+}
+@media print{
+  body{background:#fff}
+  .form,.barra,.acciones,.metodo,h2.sec,.ejemplos{display:none !important}
+  .cuerpo{grid-template-columns:1fr}
+  .liq{position:static;border:0;padding:0}
+}
+@media (prefers-reduced-motion: no-preference){
+  .op,.chip,.agregar{transition:background-color .15s,border-color .15s,color .15s}
+}
+
+/* ===== Versión 2: pestañas, parcela, verificación, plano ===== */
+.tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--linea)}
+.tab{border:1px solid transparent;border-bottom:0;background:transparent;padding:10px 16px;border-radius:var(--r) var(--r) 0 0;cursor:pointer;font-weight:600;color:var(--tinta-2);font-size:.95rem;margin-bottom:-1px}
+.tab[aria-selected="true"]{background:var(--hoja);border-color:var(--linea);color:var(--tinta);box-shadow:inset 0 3px 0 var(--acento)}
+.tab:hover{color:var(--acento)}
+.vista{display:flex;flex-direction:column;gap:18px;min-width:0}
+.bloque h3{font-size:.95rem;margin:4px 0 0;font-family:var(--display);font-weight:700}
+.buscar{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
+.buscar .campo{flex:1 1 160px}
+.btn.chico{padding:8px 12px;min-height:40px}
+.nomen{display:grid;grid-template-columns:repeat(auto-fit,minmax(74px,1fr));gap:8px}
+details.mas{border-top:1px dashed var(--linea);padding-top:10px}
+details.mas summary{cursor:pointer;color:var(--acento);font-weight:600;font-size:.9rem}
+details.mas[open] summary{margin-bottom:10px}
+.ficha{border:1px solid var(--acento);background:var(--acento-suave);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.ficha b.z{font-family:var(--display);font-size:1.05rem}
+.ficha .id{font-family:var(--cifra);font-size:.82rem;color:var(--tinta-2)}
+.indic{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;list-style:none}
+.indic li{font-size:.8rem;background:var(--hoja);border:1px solid var(--linea);border-radius:4px;padding:3px 8px}
+.indic li b{font-family:var(--cifra);font-weight:600}
+.resultados{display:flex;flex-direction:column;gap:6px}
+.resultados button{text-align:left;border:1px solid var(--linea);background:var(--papel);border-radius:var(--r);padding:8px 10px;cursor:pointer;font-size:.88rem}
+.resultados button:hover{border-color:var(--acento)}
+.msg{font-size:.88rem;color:var(--aviso);background:var(--aviso-fondo);border-radius:var(--r);padding:8px 10px;margin:0}
+.parte .c-texto{grid-column:1 / -1}
+.parte input[type="text"],.campo input[type="text"]{width:100%;min-width:0;background:var(--hoja);border:1px solid var(--linea);border-radius:4px;padding:8px 9px;min-height:40px}
+.encuadre{grid-column:1 / -1;display:flex;flex-direction:column;gap:6px;font-size:.86rem;background:var(--hoja);border:1px solid var(--linea);border-radius:4px;padding:8px 10px}
+.encuadre .cod{font-family:var(--cifra);font-size:.78rem;color:var(--tinta-2)}
+.encuadre.duda{border-color:var(--amarillo);background:var(--aviso-fondo)}
+.encuadre.duda .pide{color:var(--aviso);font-weight:600}
+.encuadre .linea2{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.encuadre select{min-height:34px;padding:4px 8px;font-size:.86rem;flex:1 1 220px}
+.items{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:6px 14px}
+.verif{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+.verif li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:2px 8px;font-size:.9rem;padding:8px 10px;border:1px solid var(--linea);border-radius:var(--r);background:var(--papel)}
+.verif .ic{grid-row:1 / span 3;font-weight:700;font-family:var(--cifra);text-align:center}
+.verif li[data-e="ok"] .ic{color:var(--acento)}
+.verif li[data-e="no"]{border-color:var(--carmin)} .verif li[data-e="no"] .ic{color:var(--carmin)}
+.verif li[data-e="rev"] .ic,.verif li[data-e="sd"] .ic{color:var(--aviso)}
+.verif .v2{color:var(--tinta-2);font-size:.82rem}
+.verif .v3{font-size:.82rem}
+.multa{border:1px solid var(--carmin);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:6px;font-size:.9rem}
+.multa h3{margin:0;font-size:.78rem;text-transform:uppercase;letter-spacing:.07em;color:var(--carmin);font-weight:600}
+.multa .rango{font-family:var(--cifra);font-weight:600;font-size:1.05rem}
+.multa p{margin:0}
+.multa small{color:var(--tinta-2)}
+.estadoCOU{display:flex;flex-wrap:wrap;gap:6px}
+.pill{font-size:.8rem;border-radius:999px;padding:2px 9px;border:1px solid var(--linea);white-space:nowrap}
+.pill.ok{border-color:var(--acento);color:var(--acento)} .pill.no{border-color:var(--carmin);color:var(--carmin)} .pill.rev{background:var(--aviso-fondo);color:var(--aviso);border-color:transparent}
+.aprox{font-family:var(--cifra);color:var(--aviso);font-weight:600}
+.renglon .con small.ac{color:var(--aviso)}
+.supuestos{font-size:.84rem;color:var(--tinta-2);margin:0}
+.linkbtn{border:0;background:transparent;color:var(--acento);text-decoration:underline;cursor:pointer;padding:0;font-size:inherit}
+.soltar{border:2px dashed var(--linea);border-radius:var(--r);padding:26px 16px;text-align:center;display:flex;flex-direction:column;gap:8px;align-items:center;background:var(--papel)}
+.soltar.sobre{border-color:var(--acento);background:var(--acento-suave)}
+.soltar input{max-width:100%}
+.vistaprevia{max-width:100%;border:1px solid var(--linea);border-radius:4px;background:#fff}
+.evid{font-family:var(--cifra);font-size:.74rem;color:var(--tinta-2);overflow-wrap:anywhere}
+@media (max-width:900px){.tab{padding:9px 11px;font-size:.9rem}}
+@media print{.tabs,.vista{display:none !important}}
+
+#v-detalle .metodo{grid-template-columns:minmax(0,1fr)}
+#v-detalle .metodo p,#v-detalle .metodo li{max-width:70ch}
+
+
+/* ===== Versión 3: foto, jerarquía de color y movimiento ===== */
+.pagina{padding-top:20px}
+.hero{position:relative;isolation:isolate;border-radius:14px;overflow:hidden;min-height:340px;display:flex;align-items:flex-end;background:#1B1530}
+.hero-foto{position:absolute;inset:0;width:100%;height:100%;max-width:none;object-fit:cover;object-position:50% 36%;z-index:-2}
+.hero::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(24,17,44,0) 0%,rgba(24,17,44,.30) 42%,rgba(24,17,44,.93) 100%)}
+.hero-texto{padding:28px 30px 26px;display:flex;flex-direction:column;gap:10px;color:#fff;max-width:880px}
+.hero .sobre{color:#FFD2B0}
+.hero h1{color:#fff;max-width:19ch;text-shadow:0 2px 18px rgba(20,12,40,.55)}
+.hero .bajada{color:rgba(255,255,255,.9);max-width:62ch}
+.hero .dato{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.28);color:#fff;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+
+.tab[aria-selected="true"]{box-shadow:inset 0 3px 0 var(--sol)}
+.tab:hover{color:var(--tinta)}
+.paso{width:26px;height:26px;border-radius:50%;background:var(--noche);color:#fff;display:inline-grid;place-items:center;font-size:.82rem;font-weight:600;transform:translateY(-2px)}
+.bloque[data-listo="1"] .paso{background:var(--verde);color:#fff}
+.bloque h2{align-items:center}
+.btn{background:var(--sol);border-color:var(--sol);color:#1D1A33;box-shadow:0 6px 16px -8px rgba(240,130,56,.8)}
+.btn:hover{background:var(--sol-claro);border-color:var(--sol-claro)}
+.btn.sec{background:transparent;color:var(--tinta);border-color:var(--tinta-2);box-shadow:none}
+.btn.sec:hover{background:var(--acento-suave);border-color:var(--acento)}
+.chip:hover{background:var(--acento-suave)}
+.ficha{border-color:var(--acento)}
+.verif li[data-e="ok"] .ic{color:var(--verde)}
+.pill.ok{border-color:var(--verde);color:var(--verde)}
+.encuadre.duda{border-left:4px solid var(--sol)}
+.medidor{grid-column:2;height:8px;border-radius:99px;background:var(--linea);position:relative;margin:5px 0 3px;overflow:hidden}
+.medidor i{position:absolute;inset:0 auto 0 0;width:0;background:var(--verde);border-radius:99px}
+.verif li[data-e="no"] .medidor i{background:var(--carmin)}
+.medidor b{position:absolute;top:0;bottom:0;width:2px;background:var(--tinta)}
+
+/* Panel de estimación: fondo de anochecer, total en naranja de horizonte */
+.liq{--tinta:var(--noche-tinta);--tinta-2:var(--noche-tinta-2);--linea:var(--noche-linea);--hoja:var(--noche);--acento:#FFB98A;--acento-suave:rgba(255,185,138,.14);
+  --verde:#7FE0B9;--carmin:#FF9AA2;--aviso:#FFD9A0;--aviso-fondo:rgba(255,190,120,.14);
+  background:var(--noche);color:var(--tinta);border:0;box-shadow:0 22px 44px -22px rgba(33,27,61,.7)}
+.liq h2{color:var(--tinta)}
+.total{border-bottom:1px solid var(--linea)}
+.total .num{color:var(--sol-claro);font-size:clamp(1.9rem,3.6vw,2.6rem)}
+.compo{display:flex;height:12px;border-radius:99px;overflow:hidden;background:var(--linea);gap:2px}
+.compo span{display:block;height:100%;width:0;min-width:0}
+.compo .c1,.pt.c1{background:var(--c1)} .compo .c2,.pt.c2{background:var(--c2)} .compo .c3,.pt.c3{background:var(--c3)} .compo .c4,.pt.c4{background:var(--c4)}
+.pt{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:7px;vertical-align:0}
+.grupo h3{color:var(--tinta)}
+.grupo h3 em{font-style:normal;color:var(--tinta-2);font-family:var(--cifra);letter-spacing:0;margin-left:6px;font-weight:400}
+.barra{background:var(--noche)} .barra b{color:var(--sol-claro)}
+@media (max-width:900px){.hero{min-height:300px}.hero-texto{padding:20px 18px}}
+@media print{.hero-foto,.hero::after{display:none}.hero{min-height:0;background:none}.hero-texto,.hero h1,.hero .bajada,.hero .sobre{color:#000;text-shadow:none}
+  .liq{--tinta:#000;--tinta-2:#444;--linea:#bbb;--hoja:#fff;--aviso:#5a3b00;--aviso-fondo:#f3f3f3;--carmin:#900;--verde:#064;background:#fff;color:#000;box-shadow:none}.total .num{color:#000}}
+
+/* Movimiento: cada animación señala algo que cambió o que pide atención */
+@media (prefers-reduced-motion: no-preference){
+  .hero-foto{animation:acerca 18s ease-out both}
+  @keyframes acerca{from{transform:scale(1.09)}to{transform:scale(1)}}
+  .vista:not([hidden]){animation:entra .3s ease-out}
+  .llega{animation:entra .4s ease-out}
+  @keyframes entra{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .compo span{transition:width .55s cubic-bezier(.2,.7,.2,1)}
+  .medidor i{transition:width .6s cubic-bezier(.2,.7,.2,1),background-color .3s}
+  .paso{transition:background-color .35s}
+  .btn,.tab,.chip,.agregar,.op,.resultados button{transition:background-color .18s,border-color .18s,color .18s,transform .18s,box-shadow .18s}
+  .btn:hover{transform:translateY(-1px)}
+  .encuadre.duda{animation:pide 1.1s ease-in-out 2}
+  @keyframes pide{0%,100%{box-shadow:0 0 0 0 rgba(240,130,56,0)}50%{box-shadow:0 0 0 5px rgba(240,130,56,.28)}}
+  .verif li.cambio{animation:marca .7s ease-out}
+  @keyframes marca{0%{transform:scale(1)}30%{transform:scale(1.015);box-shadow:0 0 0 4px rgba(180,35,44,.18)}100%{transform:scale(1)}}
+  .verif li[data-e="ok"].cambio{animation-name:marcaok}
+  @keyframes marcaok{0%{transform:scale(1)}30%{transform:scale(1.01);box-shadow:0 0 0 4px rgba(14,122,95,.2)}100%{transform:scale(1)}}
+}
+
+/* Ajustes tras la revisión visual */
+.hero{min-height:440px}
+.hero::after{background:linear-gradient(180deg,rgba(24,17,44,0) 0%,rgba(24,17,44,.12) 22%,rgba(24,17,44,.62) 50%,rgba(24,17,44,.95) 100%)}
+.hero h1{max-width:24ch}
+.hero .sobre{align-self:flex-start;background:rgba(24,17,44,.6);padding:4px 10px;border-radius:999px;color:#FFE1C8}
+.verif li > :not(.ic){grid-column:2}
+.verif .ic{grid-row:1 / span 5}
+@media (max-width:900px){.hero{min-height:400px}}
+
+/* Verificación de valores y uso del Código */
+.verifica{margin-top:6px}
+.estado-valores{margin:-10px 0 0;background:var(--hoja);border:1px solid var(--linea);border-left:5px solid var(--verde);border-radius:var(--r);padding:12px 16px;font-size:.9rem;line-height:1.6}
+.estado-valores[data-alerta="1"]{border-left-color:var(--sol)}
+.btn:disabled{opacity:.7;cursor:progress;transform:none}
+.encuadre .uso{border-top:1px dashed var(--linea);padding-top:6px}
+.encuadre .linea2.uso select{flex:1 1 260px}
+</style>
+</head>
+<body>
+<div class="pagina">
+
+  <header class="hero">
+    <img class="hero-foto" src="img/giles.jpg" alt="Vista aérea de San Andrés de Giles al atardecer: la plaza, la cuadrícula del casco urbano y el campo hasta el horizonte" width="1800" height="769">
+    <div class="hero-texto">
+      <p class="sobre">San Andrés de Giles · Obras particulares</p>
+      <h1>¿Cuánto cuesta presentar el expediente de tu obra?</h1>
+      <p class="bajada">Empezá por tu parcela, contá con tus palabras qué vas a construir o declarar y revisá si cumple con el Código de Ordenamiento Urbano. La planilla estima honorarios mínimos, pagos al Colegio y a la Caja, derechos municipales y gastos del trámite.</p>
+      <div class="vigencia" id="vigencia"></div>
+      <div class="verifica"><button type="button" class="btn" id="verificar">Verificar valores actualizados</button></div>
+    </div>
+  </header>
+  <p class="estado-valores" id="msg-valores" role="status" hidden></p>
+
+  <nav class="tabs" role="tablist" aria-label="Secciones">
+    <button type="button" class="tab" role="tab" id="tab-inicio" data-tab="inicio" aria-controls="v-inicio" aria-selected="true">Inicio</button>
+    <button type="button" class="tab" role="tab" id="tab-plano" data-tab="plano" aria-controls="v-plano" aria-selected="false">Leer un plano en PDF</button>
+    <button type="button" class="tab" role="tab" id="tab-detalle" data-tab="detalle" aria-controls="v-detalle" aria-selected="false">Cálculo detallado</button>
+  </nav>
+
+  <div class="cuerpo">
+    <form class="form" id="form" novalidate>
+
+      <!-- ================= INICIO ================= -->
+      <div class="vista" id="v-inicio" role="tabpanel" aria-labelledby="tab-inicio">
+
+        <section class="bloque" aria-labelledby="h-parcela">
+          <h2 id="h-parcela"><span class="paso">1</span>Tu parcela</h2>
+          <p class="ayuda">Con la partida, la planilla toma la zona, la superficie del terreno y los indicadores del Código. Si no la sabés, ubicá tu parcela en el mapa de <a id="lnk-cou" href="#">Consulta Urbanística Giles</a> y copiá el número.</p>
+          <div class="buscar">
+            <div class="campo"><label for="partida">Partida municipal</label><input type="text" id="partida" inputmode="numeric" autocomplete="off" placeholder="Por ejemplo, 6510"></div>
+            <button type="button" class="btn chico" id="buscar-partida">Buscar</button>
+          </div>
+          <details class="mas" id="det-nomen">
+            <summary>Buscar por nomenclatura catastral</summary>
+            <div class="nomen">
+              <div class="campo"><label for="n-c">Circ.</label><input type="text" id="n-c" autocomplete="off"></div>
+              <div class="campo"><label for="n-s">Secc.</label><input type="text" id="n-s" autocomplete="off"></div>
+              <div class="campo"><label for="n-ch">Chacra</label><input type="text" id="n-ch" autocomplete="off"></div>
+              <div class="campo"><label for="n-q">Quinta</label><input type="text" id="n-q" autocomplete="off"></div>
+              <div class="campo"><label for="n-f">Fracc.</label><input type="text" id="n-f" autocomplete="off"></div>
+              <div class="campo"><label for="n-m">Manz.</label><input type="text" id="n-m" autocomplete="off"></div>
+              <div class="campo"><label for="n-p">Parc.</label><input type="text" id="n-p" autocomplete="off"></div>
+            </div>
+            <button type="button" class="btn sec chico" id="buscar-nomen" style="margin-top:10px">Buscar por nomenclatura</button>
+          </details>
+          <p class="msg" id="msg-parcela" hidden></p>
+          <div class="resultados" id="res-parcela"></div>
+          <div id="ficha-parcela"></div>
+          <div class="fila">
+            <div class="campo"><label for="zona">Zona del Código</label><select id="zona"></select></div>
+            <div class="campo"><label for="terreno">Superficie del terreno (m²)</label><input type="number" id="terreno" min="0" step="0.1" inputmode="decimal"></div>
+          </div>
+          <p class="ayuda">Si no encontrás la parcela, elegí la zona y cargá la superficie a mano. Los datos salen de la base de la Consulta Urbanística; ante una diferencia, vale el plano de mensura.</p>
+        </section>
+
+        <section class="bloque" aria-labelledby="h-partes">
+          <h2 id="h-partes"><span class="paso">2</span>Tu obra</h2>
+          <p class="ayuda">Cargá una parte por cada cosa distinta: la casa, el quincho, el local, la pileta. Escribí qué es con tus palabras y la planilla busca el encuadre del Colegio. La superficie semicubierta (galerías, aleros, cocheras abiertas) se computa al 50 %.</p>
+          <div class="ejemplos"><span>Probá con un ejemplo:</span>
+            <button type="button" class="chip" data-ej="nueva">Casa nueva de 90 m²</button>
+            <button type="button" class="chip" data-ej="declarar">Declarar una casa de 75 m²</button>
+            <button type="button" class="chip" data-ej="mixto">Ampliar y declarar</button>
+            <button type="button" class="chip" data-ej="local">Local de 60 m²</button>
+          </div>
+          <div class="partes" id="partes"></div>
+          <button type="button" class="agregar" id="agregar">+ Agregar otra parte</button>
+          <ul class="leyenda" aria-label="Referencias de color, como en el plano municipal">
+            <li><i class="m construir"></i>A construir</li>
+            <li><i class="m existente"></i>Existente sin plano</li>
+            <li><i class="m demoler"></i>A demoler</li>
+            <li><i class="m aprobado"></i>Existente con plano aprobado</li>
+          </ul>
+          <div class="fila">
+            <div class="campo">
+              <label for="declarada">Superficie cubierta ya declarada, con plano aprobado (m²)</label>
+              <input type="number" id="declarada" min="0" step="1" inputmode="decimal" value="0">
+            </div>
+          </div>
+          <p class="ayuda" id="txt-declarada"></p>
+          <div id="b-vivienda" hidden>
+            <h3>Características de la vivienda</h3>
+            <p class="ayuda">El Colegio ordena las viviendas de la categoría A a la E según cuántas de estas características tienen. Marcá las que correspondan a la casa completa.</p>
+            <div class="items" id="items-viv"></div>
+            <p class="ayuda" id="txt-categoria"></p>
+          </div>
+        </section>
+
+        <section class="bloque" id="b-cou" aria-labelledby="h-cou">
+          <h2 id="h-cou"><span class="paso">3</span>¿Cumple con el Código?</h2>
+          <p class="ayuda">Cuatro datos simples alcanzan para comparar tu obra con los indicadores de la zona. Contá todo lo que hay en la parcela: lo declarado, lo que está sin plano y lo que vas a construir.</p>
+          <div class="fila">
+            <div class="campo"><label for="v-plantas">¿Cuántas plantas tiene?</label>
+              <select id="v-plantas"><option value="1">Solo planta baja</option><option value="2">Planta baja y un piso</option><option value="3">Planta baja y dos pisos</option><option value="4">Más de tres plantas</option></select></div>
+            <div class="campo"><label for="v-huella">Superficie que ocupa en planta baja (m²)</label><input type="number" id="v-huella" min="0" step="0.5" inputmode="decimal"></div>
+          </div>
+          <div class="fila">
+            <div class="campo"><label for="v-frente">Distancia del frente a la línea municipal (m)</label><input type="number" id="v-frente" min="0" step="0.1" inputmode="decimal"></div>
+            <div class="campo"><label for="v-fondo">Distancia al fondo del terreno (m)</label><input type="number" id="v-fondo" min="0" step="0.1" inputmode="decimal"></div>
+            <div class="campo"><label for="v-lateral">Menor distancia a un costado (m)</label><input type="number" id="v-lateral" min="0" step="0.1" inputmode="decimal"></div>
+          </div>
+          <p class="ayuda" id="txt-huella"></p>
+          <ul class="verif" id="lista-verif"></ul>
+          <p class="ayuda">Esta comparación es orientativa: usa lo que cargaste y puede interpretarse distinto al medir en el lugar. La verificación válida la hace la Dirección de Planeamiento y Obras Particulares sobre el plano.</p>
+        </section>
+      </div>
+
+      <!-- ================= PLANO ================= -->
+      <div class="vista" id="v-plano" role="tabpanel" aria-labelledby="tab-plano" hidden>
+        <section class="bloque" aria-labelledby="h-plano">
+          <h2 id="h-plano">Leer un plano en PDF</h2>
+          <p class="ayuda">Si ya tenés el plano, subilo: la planilla busca en la carátula el balance de superficies, el destino y la partida, y te propone los datos. El archivo se lee en tu navegador y no se envía a ningún lado.</p>
+          <div class="soltar" id="soltar">
+            <label for="pdf"><b>Elegí el PDF</b> o arrastralo acá</label>
+            <input type="file" id="pdf" accept="application/pdf,.pdf">
+          </div>
+          <p class="msg" id="msg-pdf" hidden></p>
+          <div id="pdf-campos" hidden>
+            <h3>Datos encontrados en el plano</h3>
+            <p class="ayuda">Revisalos contra el plano y corregí lo que haga falta antes de pasarlos. La lectura es automática y puede equivocarse, sobre todo si el balance está en varias planillas.</p>
+            <div class="fila">
+              <div class="campo"><label for="p-destino">Destino</label><input type="text" id="p-destino"></div>
+              <div class="campo"><label for="p-partida">Partida</label><input type="text" id="p-partida" inputmode="numeric"></div>
+              <div class="campo"><label for="p-terreno">Superficie del terreno (m²)</label><input type="number" id="p-terreno" min="0" step="0.01"></div>
+            </div>
+            <div class="fila">
+              <div class="campo"><label for="p-declCub">Existente con plano aprobado (m²)</label><input type="number" id="p-declCub" min="0" step="0.01"></div>
+              <div class="campo"><label for="p-consCub">A construir, cubierta (m²)</label><input type="number" id="p-consCub" min="0" step="0.01"></div>
+              <div class="campo"><label for="p-consSemi">A construir, semicubierta (m²)</label><input type="number" id="p-consSemi" min="0" step="0.01"></div>
+            </div>
+            <div class="fila">
+              <div class="campo"><label for="p-exCub">Sin plano, cubierta (m²)</label><input type="number" id="p-exCub" min="0" step="0.01"></div>
+              <div class="campo"><label for="p-exSemi">Sin plano, semicubierta (m²)</label><input type="number" id="p-exSemi" min="0" step="0.01"></div>
+              <div class="campo"><label for="p-demoCub">A demoler (m²)</label><input type="number" id="p-demoCub" min="0" step="0.01"></div>
+            </div>
+            <div class="evid" id="pdf-evid"></div>
+            <div class="acciones" style="margin-top:12px"><button type="button" class="btn" id="pdf-usar">Pasar estos datos al Inicio</button></div>
+          </div>
+          <canvas class="vistaprevia" id="pdf-canvas" hidden></canvas>
+        </section>
+      </div>
+
+      <!-- ================= DETALLE ================= -->
+      <div class="vista" id="v-detalle" role="tabpanel" aria-labelledby="tab-detalle" hidden>
+        <section class="bloque" id="b-construir" aria-labelledby="h-construir">
+          <h2 id="h-construir">Lo que vas a construir</h2>
+          <fieldset class="opciones">
+            <legend class="rotulo">¿Qué le encargás al profesional?</legend>
+            <label class="op"><input type="checkbox" id="t-proyecto" checked><span>Proyecto<small>Anteproyecto, planos y documentación. Es el 60 % del honorario de proyecto y dirección.</small></span></label>
+            <label class="op"><input type="checkbox" id="t-direccion" checked><span>Dirección de obra<small>Control de que la obra se ejecute según el proyecto. Es el 40 % restante.</small></span></label>
+          </fieldset>
+          <fieldset class="opciones" id="f-modalidad">
+            <legend class="rotulo">¿Cómo se va a construir?</legend>
+            <label class="op"><input type="radio" name="modalidad" id="m-unica" value="unica"><span>Con una sola empresa constructora<small>La empresa asume toda la ejecución. Sin suplemento de dirección.</small></span></label>
+            <label class="op"><input type="radio" name="modalidad" id="m-separados" value="separados" checked><span>Contratando cada gremio por separado<small>Albañil, electricista, plomero por su cuenta. La dirección lleva un suplemento del 100 %.</small></span></label>
+            <label class="op"><input type="radio" name="modalidad" id="m-administracion" value="administracion"><span>Por administración<small>El profesional además compra, contrata y administra la obra. Suplemento del 200 %.</small></span></label>
+          </fieldset>
+          <label class="chk"><input type="checkbox" id="linea"><span>Voy a pedir el otorgamiento de línea municipal. Se pide cuando el frente de la parcela no está materializado; consultalo en Planeamiento.</span></label>
+        </section>
+
+        <section class="bloque" id="b-existente" aria-labelledby="h-existente">
+          <h2 id="h-existente">Lo que ya está construido sin plano</h2>
+          <p class="ayuda">Declarar una obra existente (empadronarla) requiere medición, planos e informe técnico de un profesional. Como la obra nunca se presentó, corresponde además la contribución del artículo 29 de la Ley 12.490 a la Caja de Previsión, a cargo del propietario, aunque en su momento haya trabajado un profesional.</p>
+          <label class="chk"><input type="checkbox" id="antig70"><span>La construcción tiene más de 70 años y puedo acreditarlo. El derecho de construcción baja a la alícuota reducida.</span></label>
+        </section>
+
+        <section class="bloque" id="b-demoler" aria-labelledby="h-demoler">
+          <h2 id="h-demoler">Lo que vas a demoler</h2>
+          <div class="fila">
+            <div class="campo"><label for="estado">Estado de la construcción</label>
+              <select id="estado"><option value="bueno">Bueno</option><option value="regular" selected>Regular</option><option value="malo">Malo o peligroso</option></select></div>
+            <div class="campo"><label for="demopermiso">Permiso de demolición</label>
+              <select id="demopermiso"><option value="con" selected>Lo pido antes de demoler</option><option value="sin">Ya se demolió sin permiso</option></select></div>
+          </div>
+        </section>
+
+        <section class="bloque" aria-labelledby="h-gastos">
+          <h2 id="h-gastos">Gastos del trámite</h2>
+          <p class="ayuda">Los viáticos y las copias no forman parte del honorario: son gastos a cargo de quien encarga el trabajo.</p>
+          <h3>Copias de planos</h3>
+          <div class="fila">
+            <div class="campo"><label for="g-formato">Tamaño de lámina (DIN)</label><select id="g-formato"></select></div>
+            <div class="campo"><label for="g-laminas">Láminas del plano</label><input type="number" id="g-laminas" min="0" step="1" inputmode="numeric" value="2"></div>
+            <div class="campo"><label for="g-copias">Copias de cada lámina</label><input type="number" id="g-copias" min="0" step="1" inputmode="numeric"></div>
+            <div class="campo"><label for="g-preciom2">Precio por m² de plano ($)</label><input type="number" id="g-preciom2" min="0" step="100" inputmode="numeric"></div>
+          </div>
+          <p class="ayuda" id="txt-copias"></p>
+          <h3>Viáticos y sellados</h3>
+          <div class="fila">
+            <div class="campo"><label for="g-viajes">Viajes del profesional a la obra</label><input type="number" id="g-viajes" min="0" step="1" inputmode="numeric" value="0"></div>
+            <div class="campo"><label for="g-valorviaje">Valor por viaje ($)</label><input type="number" id="g-valorviaje" min="0" step="50" inputmode="numeric"></div>
+            <div class="campo"><label for="g-otros">Sellados, estampillas y otros ($)</label><input type="number" id="g-otros" min="0" step="100" inputmode="numeric" value="0"></div>
+          </div>
+          <p class="ayuda" id="txt-gastos"></p>
+          <label class="chk"><input type="checkbox" id="incluidos"><span>Mi profesional ya incluye la tasa de visado y el aporte a la Caja dentro de su honorario. No los sumes aparte.</span></label>
+        </section>
+
+        <h2 class="sec" id="como">Cómo se calcula</h2>
+        <div class="metodo" id="metodo"></div>
+      </div>
+    </form>
+
+    <aside class="liq" id="liquidacion" aria-live="polite">
+      <h2>Estimación del expediente</h2>
+      <div class="total">
+        <span class="rot">Total estimado <span class="aprox" title="Valor aproximado">≈</span></span>
+        <span class="num" id="o-total">$ 0</span>
+        <span class="sub" id="o-sub"></span>
+      </div>
+      <div class="compo" id="o-compo" role="img" aria-label="Reparto del costo entre honorarios, Colegio y Caja, Municipalidad y gastos"><span class="c1"></span><span class="c2"></span><span class="c3"></span><span class="c4"></span></div>
+      <div id="o-grupos"></div>
+      <div id="o-cou"></div>
+      <p class="supuestos" id="o-supuestos"></p>
+      <div class="grupo" id="o-fuera"></div>
+      <div class="acciones">
+        <button type="button" class="btn" id="copiar">Copiar resumen</button>
+        <button type="button" class="btn sec" id="imprimir" hidden>Imprimir o guardar PDF</button>
+      </div>
+      <p class="nota">Es una estimación orientativa, no una liquidación. Los importes definitivos surgen del visado del Colegio y de la liquidación de la Dirección de Planeamiento y Obras Particulares. Los renglones con <b>≈</b> llevan una aclaración sobre su precisión.</p>
+    </aside>
+  </div>
+
+  <footer>
+    <p id="pie-cou"></p>
+    <p id="pie-fuentes"></p>
+    <p id="pie-autor"></p>
+  </footer>
+</div>
+
+<div class="barra" aria-hidden="true"><div><span>Total estimado ≈</span><br><b id="o-barra">$ 0</b></div><a href="#liquidacion" id="barra-ver">Ver detalle</a></div>
+
+<script src="datos/cou.js"></script>
+<script id="motor">
+/* =====================================================================
+   VALORES VIGENTES. Para actualizar la herramienta alcanza con editar este bloque.
+   Todas las tablas del Colegio derivan de la Unidad Referencial (UR).
+   ===================================================================== */
+var CFG = {
+  actualizado: "14/11/2026",
+  colegio: {
+    UR: 1518000,                    // Unidad Referencial por m². Res. CAUBA 8/26, vigente desde 01/04/2026
+    vigenciaUR: "01/04/2026",
+    semicubierta: 0.5,              // la superficie semicubierta computa al 50 %
+    cepAlicuota: 0.033,             // tasa de visado (CEP): 3,3 % del honorario referencial (deducida de previsados)
+    cepMinimoFC: 0.75,              // CEP mínima = 0,75 FC ($ 56.925)
+    aporteCaja: 0.10,               // Ley 12.490, art. 26 inc. b
+    art29: 0.10,                    // contribución art. 29: 10 % del honorario de proyecto y dirección
+    proyecto: 0.60, direccion: 0.40,
+    suplSeparados: 1.0, suplAdministracion: 2.0,   // Res. CAPBA 67/10
+    demolicion: 0.16, estado: { bueno: 0.30, regular: 0.45, malo: 0.60 },
+    minTareaFC: 5,                  // mínimo para cualquier tarea = 5 FC ($ 379.500)
+    informeTecnicoFC: 6.5,          // informe técnico con inspección ocular = 6,5 FC ($ 493.350)
+    minMedicionVivAFC: 10,          // medición + informe, vivienda categoría A ($ 759.000)
+    minMedicionRestoFC: 16,         // medición + informe, resto ($ 1.214.400)
+    medioDiaViajeFC: 0.5,           // medio día de viaje ($ 37.950)
+    tablaPD: [[1000, 0.085], [5000, 0.08], [10000, 0.075], [30000, 0.07], [100000, 0.065], [Infinity, 0.06]],
+    tablaMed: { baseFC: 200, minimoFC: 2.5, tramos: [[1000, 0.01], [2000, 0.007], [5000, 0.005], [Infinity, 0.003]] },
+    tablaGastos: [[5, 0.25], [20, 0.20], [50, 0.15], [Infinity, 0.10]]
+  },
+  municipio: {
+    norma: "Ordenanza Impositiva N.º 2787/26", numero: 2787, anio: 2026,
+    valoresDe: "enero de 2026",
+    aConstruir: 0.01, aConstruirMulti: 0.015,       // art. 15 a
+    sinPermiso: 0.025, sinPermisoMulti: 0.03,       // art. 16
+    minSinPermiso: 120000,                          // art. 16, mínimo por parcela edificada
+    antiguedad70: 0.0075,                           // art. 17
+    demolicionCon: 0.0025, demolicionSin: 0.0075,   // art. 19
+    oficina: [                                       // art. 14
+      { id: "inicio", nombre: "Inicio de actuaciones (Mesa de Entradas)", valor: 10000, cuando: "siempre" },
+      { id: "final", nombre: "Certificado final de obra", valor: 30000, cuando: "construir" },
+      { id: "linea", nombre: "Otorgamiento de línea municipal", valor: 30000, cuando: "linea" }
+    ]
+  },
+  // Código de Faltas, Ord. 2617/23. La multa la fija el Juez de Faltas; la planilla solo informa el marco legal.
+  faltas: {
+    norma: "Código de Faltas, Ordenanza N.º 2617/23", numero: 2617, anio: 2023,
+    modulo: null,                   // valor del módulo en pesos (2 % del sueldo básico inicial de la categoría II municipal)
+    antirreglamentaria: [10, 15000],// art. 89: obras o ampliaciones antirreglamentarias
+    usoProhibido: [50, 4000]        // art. 100: funcionamiento prohibido por zonificación
+  },
+  // Copias: precio por m² de plano ploteado. Referencia: ploteo municipal A1 en blanco y negro, $ 4.200 (art. 14 inc. 10 c.4).
+  ploteo: { precioM2: 8400, copias: 8, formato: "A1", formatos: { A4: 0.0625, A3: 0.125, A2: 0.25, A1: 0.5, A0: 1 } },
+  enlaces: {
+    cou: "https://surtecto.github.io/Consulta-COUSAG2024/",
+    digesto: "https://surtecto.github.io/HCD-SAG-Digesto2026/",
+    digestoDatos: "https://surtecto.github.io/HCD-SAG-Digesto2026/novedades/hcd-cache.json",
+    valores: "datos/valores.json",
+    colegio: "https://caubauno.org/visado/",
+    tablas: "https://caubauno.org/wp-content/uploads/2026/03/8-26-VALORES-REF-2026.pdf",
+    impositiva: "https://hcdsanandresdegiles.com.ar/2026-ord2787-ordenanza-impositiva/",
+    faltas: "https://hcdsanandresdegiles.com.ar/2023-ord02617-codigo-de-faltas/",
+    ley12490: "https://normas.gba.gob.ar/documentos/BLmDYSQV.html"
+  },
+  autor: ""
+};
+
+/* Destinos de obra y coeficientes. Anexo I, Res. CAUBA 8/26. */
+var DESTINOS = [
+  ["Vivienda", [
+    ["1.2.1.1", "Vivienda unifamiliar, categoría A", 0.70, "vivA"],
+    ["1.2.1.2", "Vivienda unifamiliar, categoría B", 0.80, "viv"],
+    ["1.2.2.1", "Vivienda unifamiliar, categoría C", 1.00, "viv"],
+    ["1.2.2.2", "Vivienda unifamiliar, categoría D", 1.20, "viv"],
+    ["1.2.3.1", "Vivienda unifamiliar, categoría E", 1.40, "viv"],
+    ["1.1", "Vivienda de interés social (Ley de Acceso Justo al Hábitat)", 0.50],
+    ["1.5", "Vivienda industrializada", 0.50],
+    ["1.3.1.1", "Vivienda multifamiliar, hasta 4 plantas", 0.90, "multi"],
+    ["1.3.3.1", "Vivienda multifamiliar, más de 4 plantas", 1.00, "multi"],
+    ["1.6.1", "Pileta de hormigón revestida, con equipo de bombeo", 0.50, "pileta"],
+    ["1.6.2", "Otras piletas", 0.25, "pileta"]
+  ]],
+  ["Comercio", [
+    ["3.1", "Comercio minorista individual, hasta 50 m²", 0.50],
+    ["3.4", "Comercio minorista o mayorista, de 50 a 300 m²", 0.70],
+    ["3.4.1", "Comercio minorista o mayorista, más de 300 m²", 0.80]
+  ]],
+  ["Industria, depósitos y campo", [
+    ["2.1", "Depósito o industria de baja complejidad (hasta 12 m de luz y 6 m de alto)", 0.30],
+    ["2.2.1", "Depósito que supera 12 m de luz o 6 m de alto", 0.45],
+    ["2.2.2", "Industria que supera 12 m de luz o 6 m de alto", 0.60],
+    ["2.3", "Industria de alta complejidad o laboratorio industrial", 1.00],
+    ["2.4", "Invernáculo o local para cría de animales", 0.10],
+    ["2.5", "Tinglado: cubierta sin cerramientos laterales", 0.20]
+  ]],
+  ["Gastronomía y alojamiento", [
+    ["9.1", "Parrilla o casa de comidas", 0.70],
+    ["9.2", "Restaurante, bar, confitería o pizzería", 0.80],
+    ["9.3", "Restaurante de categoría", 1.20],
+    ["8.1", "Hostería, hospedaje o pensión", 0.80],
+    ["8.2", "Hotel de 2 y 3 estrellas", 1.00]
+  ]],
+  ["Salud y educación", [
+    ["6.1", "Dispensario o sala de primeros auxilios", 0.70],
+    ["6.2", "Consultorios o laboratorio de análisis clínicos", 0.80],
+    ["6.3", "Clínica, sanatorio o geriátrico", 1.00],
+    ["5.1", "Establecimiento educativo, hasta 200 m²", 0.50],
+    ["5.2", "Establecimiento educativo, más de 200 m²", 1.00]
+  ]],
+  ["Oficinas, reunión y deporte", [
+    ["12.1", "Oficinas y administración, edificio privado", 1.00],
+    ["7.1", "Banco, financiera o seguros", 1.25],
+    ["4.2", "Salón de fiestas", 1.00],
+    ["10.1", "Capilla o equivalente", 0.70],
+    ["13.1", "Club social", 0.70],
+    ["13.2.1", "Club deportivo sin tribuna, luces menores de 15 m", 0.70],
+    ["13.3.1", "Natatorio descubierto de club", 0.50, "pileta"]
+  ]],
+  ["Cocheras y servicios", [
+    ["14.1", "Cochera en planta única con cubierta liviana", 0.30],
+    ["15.1", "Playa de estacionamiento o maniobras", 0.08],
+    ["15.2.1", "Estación de servicio: playa de expendio cubierta o semicubierta", 0.60]
+  ]]
+];
+var DEST = {};
+DESTINOS.forEach(function (g) { g[1].forEach(function (d) { DEST[d[0]] = { cod: d[0], nombre: d[1], coef: d[2], tipo: d[3] || "" }; }); });
+
+/* ---------------- Destino en palabras del vecino → código del Colegio ----------------
+   Cada regla: patrón sobre el texto normalizado y uno de: ops (códigos posibles; "VIV" = parte de la vivienda),
+   auto ("comercio" o "educacion": se resuelve por superficie). uso: códigos de uso del COU a verificar. */
+var REGLAS = [
+  { id: "pileta", re: /pileta|piscina|natatorio/, ops: ["1.6.1", "1.6.2"], pregunta: "¿Cómo es la pileta?" },
+  { id: "multi", re: /departamento|depto|duplex|multifamiliar|\bph\b|propiedad horizontal|edificio de (viviendas|departamentos)|dos viviendas|complejo de viviendas/, ops: ["1.3.1.1", "1.3.3.1"], pregunta: "¿Cuántas plantas tiene?" },
+  { id: "comidas", re: /casa de comidas|rotiseria|comidas para llevar|parrilla al paso/, ops: ["9.1"] },
+  { id: "gastro", re: /restaurante|restaurant|restoran|\bbar\b|confiteria|pizzeria|cafeteria|\bcafe\b|cerveceria|heladeria|comedor/, ops: ["9.2", "9.3"], pregunta: "¿Qué tipo de local gastronómico es?" },
+  { id: "geriatrico", re: /geriatrico|hogar de ancianos|residencia para mayores|clinica|sanatorio/, ops: ["6.3"] },
+  { id: "fiestas", re: /salon de (fiestas|eventos)|eventos/, ops: ["4.2"] },
+  { id: "estacion", re: /estacion de servicio|\bgnc\b|surtidor/, ops: ["15.2.1"] },
+  { id: "playa", re: /playa de estacionamiento|estacionamiento/, ops: ["15.1", "14.1"], pregunta: "¿Es descubierta o techada?" },
+  { id: "hotel", re: /hotel|hosteria|hospedaje|pension|hostel|alojamiento/, ops: ["8.1", "8.2"], pregunta: "¿Qué tipo de alojamiento es?" },
+  { id: "banco", re: /banco|financiera|seguros/, ops: ["7.1"] },
+  { id: "salita", re: /primeros auxilios|dispensario|salita/, ops: ["6.1"] },
+  { id: "consultorio", re: /consultorio|laboratorio de analisis|odontolog|kinesiolog|veterinaria|optica|centro medico/, ops: ["6.2"] },
+  { id: "educacion", re: /escuela|colegio|jardin de infantes|jardin maternal|instituto|academia|guarderia/, auto: "educacion" },
+  { id: "culto", re: /iglesia|capilla|templo|culto/, ops: ["10.1"] },
+  { id: "club", re: /club|sede social|sociedad de fomento|gimnasio/, ops: ["13.1", "13.2.1"], pregunta: "¿Qué tipo de club es?" },
+  { id: "oficina", re: /oficina|estudio|escritorio|inmobiliaria|administracion/, ops: ["12.1"] },
+  { id: "cria", re: /criadero|gallinero|pollo|cerdo|porcino|avicola|granja|tambo|establo|caballeriza|invernadero|invernaculo|vivero/, ops: ["2.4"] },
+  { id: "tinglado", re: /tinglado|cobertizo/, ops: ["2.5", "2.1"], pregunta: "¿Tiene paredes?" },
+  { id: "industria", re: /fabrica|industria|taller|carpinteria|herreria|metalurgic|elaboracion|frigorifico/, ops: ["2.1", "2.2.2", "2.3"], pregunta: "¿Qué tamaño y complejidad tiene?", uso: ["Ind1", "Ind2", "Ind3", "S5a", "S5b", "S6a", "S6b", "S6c"] },
+  { id: "galpon", re: /galpon|deposito|\bnave\b|logistic|acopio/, ops: ["2.1", "2.2.1"], pregunta: "¿Qué tamaño tiene?" },
+  { id: "comercio", re: /kiosco|quiosco|local|comercio|negocio|almacen|tienda|supermercado|autoservicio|despensa|verduleria|carniceria|panaderia|farmacia|ferreteria|mayorista|showroom|comercial|venta/, auto: "comercio" },
+  { id: "prefab", re: /prefabricad|industrializad|modular|contenedor|container/, ops: ["1.5"] },
+  { id: "social", re: /interes social|vivienda social/, ops: ["1.1"] },
+  { id: "cochera", re: /cochera|garage|garaje/, ops: ["VIV", "14.1"], pregunta: "¿De qué es la cochera?" },
+  { id: "cabana", re: /caban/, ops: ["VIV", "8.1"], pregunta: "¿Para qué se usa?" },
+  { id: "vivienda", re: /casa|vivienda|chalet|hogar|monoambiente|quincho|parrilla|galeria|lavadero|dormitorio|bano|cocina|living|habitacion|ampliacion|estar|pergola|alero|sum\b/, ops: ["VIV"] }
+];
+var OPCION_VIV = "Es parte de una vivienda unifamiliar";
+
+function norm(s) { return String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, " ").trim(); }
+function detectarDestino(texto) {
+  var t = norm(texto); if (!t) return null;
+  for (var i = 0; i < REGLAS.length; i++) if (REGLAS[i].re.test(t)) return REGLAS[i];
+  return null;
+}
+/* Categoría de vivienda unifamiliar. Ocho ítems de la planilla del Colegio; el de superficie se calcula solo. */
+var ITEMS_VIV = [
+  ["servicio", "Tiene dependencias de servicio (habitación para personal)"],
+  ["cocheras", "Tiene dos o más cocheras cubiertas o semicubiertas"],
+  ["aire", "Tiene aire acondicionado central u otra instalación especial"],
+  ["banos", "Tiene cuatro o más baños o toilettes"],
+  ["piscina", "Tiene sauna o pileta con espejo de agua mayor de 30 m²"],
+  ["country", "Está en un country, club de campo u otra urbanización privada"],
+  ["niveles", "Tiene más de tres niveles o plantas"]
+];
+function categoriaVivienda(items, supTotal) {
+  var n = 0; items = items || {};
+  ITEMS_VIV.forEach(function (it) { if (items[it[0]]) n++; });
+  var porSup = supTotal > 150; if (porSup) n++;
+  if (items.country && n === 1) n = 2;      // el ítem de ubicación solo cuenta doble
+  var cod = ["1.2.1.1", "1.2.1.2", "1.2.2.1", "1.2.2.2", "1.2.3.1"][Math.min(n, 4)];
+  return { cod: cod, items: n, porSup: porSup };
+}
+/* Resuelve el encuadre de una parte. ctx: { catViv, supEncuadre } */
+function resolverParte(p, ctx) {
+  var r = { cod: null, provisorio: false, opciones: null, pregunta: "", auto: "", regla: null };
+  if (p.manual) {
+    if (p.manual === "otro") return { cod: "otro", coef: Number(p.coefManual) || 0, tipo: "", nombre: "Otro destino", provisorio: false };
+    r.cod = p.manual;
+  } else {
+    var regla = detectarDestino(p.texto); r.regla = regla;
+    if (!regla) return { cod: null, coef: 0, tipo: "", nombre: "", provisorio: false, sinDetectar: !!norm(p.texto) };
+    if (regla.auto === "comercio") { r.cod = ctx.supEncuadre <= 50 ? "3.1" : ctx.supEncuadre <= 300 ? "3.4" : "3.4.1"; r.auto = "por la superficie total del comercio"; }
+    else if (regla.auto === "educacion") { r.cod = ctx.supEncuadre <= 200 ? "5.1" : "5.2"; r.auto = "por la superficie total del establecimiento"; }
+    else {
+      var ops = regla.ops, i = p.opcion == null ? 0 : Math.min(p.opcion, ops.length - 1);
+      r.cod = ops[i]; r.opciones = ops.length > 1 ? ops : null; r.pregunta = regla.pregunta || "";
+      r.provisorio = ops.length > 1 && p.opcion == null;
+    }
+  }
+  var esViv = r.cod === "VIV"; if (esViv) r.cod = ctx.catViv;
+  var d = DEST[r.cod];
+  r.coef = d.coef; r.tipo = d.tipo; r.nombre = d.nombre; r.esViv = esViv || d.tipo === "viv" || d.tipo === "vivA";
+  return r;
+}
+/* Uso del Código a partir de las palabras del vecino. Es el buscador de actividades de la Consulta Urbanística Giles
+   (misma lista de actividades, mismas definiciones y mismos rangos de superficie), leído de datos/cou.js.
+   Devuelve los usos posibles ordenados: [{ c: código, s: puntaje }]. */
+function normTxt(s) { return String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9ñ ]+/g, " ").replace(/\s+/g, " ").trim(); }
+function interpretarUso(q, cub, DC) {
+  if (!DC || !DC.actividades) return [];
+  var nq = " " + normTxt(q) + " "; if (nq.trim().length < 3) return [];
+  var stop = {}; (DC.stop || []).forEach(function (w) { stop[w] = 1; });
+  var toks = nq.trim().split(" ").filter(function (t) { return t.length >= 3 && !stop[t]; });
+  var sc = {}, orden = [];
+  function add(c, pts) { if (!sc[c]) { sc[c] = { c: c, s: 0 }; orden.push(sc[c]); } sc[c].s += pts; }
+  DC.actividades.forEach(function (e) {
+    var best = 0;
+    e[0].forEach(function (k) {
+      var nk = normTxt(k);
+      if (nq.indexOf(" " + nk + " ") >= 0) { var v = 20 + nk.length * 2; if (v > best) best = v; }
+      else if (nk.indexOf(" ") < 0 && nk.length >= 5 && toks.some(function (t) {
+        return t.length >= 5 && (t.indexOf(nk.slice(0, Math.max(5, nk.length - 2))) === 0 || nk.indexOf(t.slice(0, Math.max(5, t.length - 2))) === 0);
+      })) { var v2 = 10 + nk.length; if (v2 > best) best = v2; }
+    });
+    if (best) e[1].forEach(function (c, i) { add(c, best - i * 2); });
+  });
+  (DC.usosDef || []).forEach(function (u) {
+    var nd = " " + normTxt(u[1] + " " + u[2]) + " ", m = 0;
+    toks.forEach(function (t) { if (nd.indexOf(" " + t) >= 0) m += t.length >= 6 ? 4 : 2; });
+    if (m) add(u[0], m);
+  });
+  if (/ venta /.test(nq) && !orden.some(function (x) { return /^C/.test(x.c); })) ["C1a", "C1b", "C1c"].forEach(function (c, i) { add(c, 8 - i); });
+  if (/ (fabrica|fabricacion|elaboracion|produccion) /.test(nq)) add("Ind1", 6);
+  if (/ reparacion /.test(nq) && !orden.length) add("S3", 6);
+  var arr = orden.slice().sort(function (a, b) { return b.s - a.s; });
+  if (!arr.length) return [];
+  var top = arr[0].s; arr = arr.filter(function (x) { return x.s >= Math.max(6, top * 0.35); }).slice(0, 6);
+  if (cub) arr.forEach(function (x) {
+    var r = DC.rango && DC.rango[x.c];
+    if (r) { x.fit = cub >= r[0] && cub <= (r[1] == null ? Infinity : r[1]); x.s += x.fit ? 15 : -10; }
+  });
+  arr.sort(function (a, b) { return b.s - a.s; });
+  return arr;
+}
+
+/* ---------------- Honorarios y costos ---------------- */
+function escalaAcumulada(valor, tramos, unidad) {
+  var total = 0, desde = 0;
+  for (var i = 0; i < tramos.length && valor > desde; i++) {
+    var hasta = tramos[i][0] * unidad;
+    total += (Math.min(valor, hasta) - desde) * tramos[i][1];
+    desde = hasta;
+  }
+  return total;
+}
+function honorarioPD(monto, c) { return monto > 0 ? escalaAcumulada(monto, c.tablaPD, c.UR / 20) : 0; }
+function honorarioMedicion(monto, c) {
+  if (monto <= 0) return 0;
+  var FC = c.UR / 20, t = c.tablaMed, total = t.minimoFC * FC, desde = t.baseFC * FC;
+  for (var i = 0; i < t.tramos.length && monto > desde; i++) {
+    var hasta = t.tramos[i][0] * FC;
+    total += (Math.min(monto, hasta) - desde) * t.tramos[i][1];
+    desde = hasta;
+  }
+  return total;
+}
+function calcular(e, cfg) {
+  var c = cfg.colegio, m = cfg.municipio, FC = c.UR / 20;
+  var r = { partes: [], sup: { construir: 0, existente: 0, demoler: 0 }, monto: { construir: 0, existente: 0, demoler: 0 } };
+  var derConstruir = 0, derExistente = 0, derDemoler = 0, todasVivA = true, hayExistente = false;
+  e.partes.forEach(function (p) {
+    var coef = Number(p.coef) || 0;
+    var sup = Math.max(0, Number(p.cub) || 0) + c.semicubierta * Math.max(0, Number(p.semi) || 0);
+    var monto = sup * c.UR * coef;
+    r.partes.push({ sup: sup, monto: monto });
+    if (sup <= 0 || coef <= 0) return;
+    r.sup[p.sit] += sup; r.monto[p.sit] += monto;
+    var multi = p.tipo === "multi";
+    if (p.sit === "construir") derConstruir += monto * (multi ? m.aConstruirMulti : m.aConstruir);
+    if (p.sit === "existente") {
+      hayExistente = true; if (p.tipo !== "vivA") todasVivA = false;
+      derExistente += monto * (e.antig70 ? m.antiguedad70 : (multi ? m.sinPermisoMulti : m.sinPermiso));
+    }
+    if (p.sit === "demoler") derDemoler += monto * (e.demolicionSinPermiso ? m.demolicionSin : m.demolicionCon);
+  });
+  var ajusteMinMuni = 0;
+  if (hayExistente && derExistente < m.minSinPermiso) { ajusteMinMuni = m.minSinPermiso - derExistente; derExistente = m.minSinPermiso; }
+
+  var h = { proyecto: 0, direccion: 0, suplemento: 0, medicion: 0, informe: 0, demolicion: 0, ajusteMinimo: 0 };
+  var pd = honorarioPD(r.monto.construir, c);
+  if (pd > 0) {
+    if (e.proyecto) h.proyecto = pd * c.proyecto;
+    if (e.direccion) {
+      h.direccion = pd * c.direccion;
+      h.suplemento = h.direccion * (e.modalidad === "separados" ? c.suplSeparados : e.modalidad === "administracion" ? c.suplAdministracion : 0);
+    }
+    var sumaPD = h.proyecto + h.direccion + h.suplemento;
+    if (sumaPD > 0 && sumaPD < c.minTareaFC * FC) h.ajusteMinimo += c.minTareaFC * FC - sumaPD;
+  }
+  if (hayExistente) {
+    h.medicion = honorarioMedicion(r.monto.existente, c);
+    h.informe = c.informeTecnicoFC * FC;
+    var minMed = (todasVivA ? c.minMedicionVivAFC : c.minMedicionRestoFC) * FC;
+    if (h.medicion + h.informe < minMed) h.ajusteMinimo += minMed - (h.medicion + h.informe);
+  }
+  if (r.monto.demoler > 0) {
+    h.demolicion = Math.max(c.demolicion * honorarioPD(r.monto.demoler * c.estado[e.estado || "regular"], c), c.minTareaFC * FC);
+  }
+  h.total = h.proyecto + h.direccion + h.suplemento + h.medicion + h.informe + h.demolicion + h.ajusteMinimo;
+  r.honorarios = h;
+
+  var col = { cep: 0, aportes: 0, art29: 0 };
+  if (h.total > 0) { col.cep = Math.max(c.cepAlicuota * h.total, c.cepMinimoFC * FC); col.aportes = c.aporteCaja * h.total; }
+  if (hayExistente) col.art29 = c.art29 * honorarioPD(r.monto.existente, c);
+  r.colegio = col;
+
+  var of = [], ofTotal = 0, hayAlgo = r.sup.construir + r.sup.existente + r.sup.demoler > 0;
+  m.oficina.forEach(function (o) {
+    var aplica = o.cuando === "siempre" ? hayAlgo : o.cuando === "linea" ? (!!e.linea && r.sup.construir > 0) : r.sup[o.cuando] > 0;
+    if (!aplica) return;
+    of.push(o); if (o.valor != null) ofTotal += o.valor;
+  });
+  r.municipio = { construir: derConstruir, existente: derExistente, demoler: derDemoler, ajusteMinimo: ajusteMinMuni, oficina: of, oficinaTotal: ofTotal,
+                  total: derConstruir + derExistente + derDemoler + ofTotal };
+
+  var g = e.gastos || {}, pl = cfg.ploteo;
+  var viaticos = (Number(g.viajes) || 0) * (Number(g.valorViaje) || 0);
+  var m2Lamina = pl.formatos[g.formato] || pl.formatos[pl.formato];
+  var m2Copias = (Number(g.laminas) || 0) * (Number(g.copias) || 0) * m2Lamina;
+  var copias = m2Copias * (Number(g.precioM2) || 0);
+  var otros = Number(g.otros) || 0;
+  r.gastos = { viaticos: viaticos, copias: copias, m2Copias: m2Copias, otros: otros, total: viaticos + copias + otros,
+               topePresunto: escalaAcumulada(h.total, c.tablaGastos, FC) };
+
+  r.colegioSumado = (e.incluidos ? 0 : col.cep + col.aportes) + col.art29;
+  r.total = h.total + r.colegioSumado + r.municipio.total + r.gastos.total;
+  r.supTotal = r.sup.construir + r.sup.existente + r.sup.demoler;
+  r.hayExistente = hayExistente;
+  return r;
+}
+
+/* ---------------- Verificación de indicadores del COU ---------------- */
+function numero(s) {
+  if (s == null) return null; s = String(s).trim(); if (!s) return null;
+  if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(s)) s = s.replace(/\./g, "").replace(",", ".");
+  else s = s.replace(",", ".");
+  var x = parseFloat(s); return isNaN(x) ? null : x;
+}
+function leerRetiro(txt) {
+  var t = norm(txt);
+  if (!t || /^[-–\s]+$/.test(t)) return { tipo: "sin" };
+  if (/no se exige|optativo/.test(t)) return { tipo: "libre" };
+  if (/no se permite/.test(t)) return { tipo: "prohibido" };
+  var m = t.match(/^(\d+(?:[.,]\d+)?)/);
+  if (m) return { tipo: "min", m: numero(m[1]), simple: /^\d+(?:[.,]\d+)?\s*m?\.?$/.test(t) };
+  return { tipo: "texto" };
+}
+function leerAltura(txt) {
+  var t = norm(txt); if (!t || /^[-–\s]+$/.test(t)) return null;
+  var p = t.match(/pb\s*\+\s*(\d)/g);
+  if (p) {
+    var ns = p.map(function (x) { return Number(x.replace(/\D/g, "")) + 1; });
+    return { plantas: ns[0], avenidas: /avenida/.test(t) && ns[1] ? ns[1] : null };
+  }
+  var m = t.match(/^(\d+(?:[.,]\d+)?)\s*m/); if (m) return { metros: numero(m[1]) };
+  return null;
+}
+/* v: { ficha, supTerreno, huella, supFOT, plantas, rFrente, rFondo, rLateral, usos:[{nombre, sit, codigo, nombreUso}], hayExistente }
+   Compara con los indicadores de la zona. No gradúa ni estima multas: eso es del Juez de Faltas. */
+function verificar(v, cfg) {
+  var f = v.ficha, it = [], F = cfg.faltas;
+  function pct(x) { return (Math.round(x * 1000) / 10).toString().replace(".", ",") + " %"; }
+  function dec(x) { return (Math.round(x * 100) / 100).toString().replace(".", ","); }
+  if (!f) return { items: [], sinZona: true };
+  var T = numero(v.supTerreno);
+
+  [["fos", "Ocupación del suelo (FOS)", numero(v.huella), "la superficie que la construcción ocupa en planta baja"],
+   ["fot", "Superficie total construida (FOT)", numero(v.supFOT), "la superficie construida"]].forEach(function (d) {
+    var lim = numero(f[d[0]]);
+    if (lim == null) { it.push({ id: d[0], nombre: d[1], exigido: "La zona no fija un valor", estado: "rev", nota: "Lo define la Dirección de Planeamiento para cada caso." }); return; }
+    var ex = "Hasta " + dec(lim) + (T ? " (" + dec(lim * T) + " m² en tu terreno)" : "");
+    if (!T || d[2] == null || d[2] <= 0) { it.push({ id: d[0], nombre: d[1], exigido: ex, estado: "sd", nota: "Falta " + (!T ? "la superficie del terreno" : d[3]) + "." }); return; }
+    var val = d[2] / T, exceso = val / lim - 1, base = { id: d[0], nombre: d[1], exigido: ex, tuObra: dec(val) + " (" + dec(d[2]) + " m²)", med: { v: val, lim: lim } };
+    if (exceso > 0.0005) { base.estado = "no"; base.exceso = exceso; base.nota = "Supera el máximo en " + pct(exceso) + ", unos " + dec(d[2] - lim * T) + " m²."; }
+    else base.estado = "ok";
+    it.push(base);
+  });
+
+  var a = leerAltura(f.alt), pl = Number(v.plantas) || 0;
+  if (!a) it.push({ id: "alt", nombre: "Altura", exigido: f.alt && !/^[-–\s]+$/.test(f.alt) ? f.alt : "La zona no fija un valor", estado: "rev", nota: "Consultalo con tu profesional." });
+  else if (a.metros) it.push({ id: "alt", nombre: "Altura", exigido: "Hasta " + dec(a.metros) + " m", tuObra: pl ? pl + (pl === 1 ? " planta" : " plantas") : "", estado: "rev", nota: "El límite está en metros: medí la altura total de la construcción." });
+  else if (!pl) it.push({ id: "alt", nombre: "Altura", exigido: f.alt, estado: "sd", nota: "Falta la cantidad de plantas." });
+  else if (pl <= a.plantas) it.push({ id: "alt", nombre: "Altura", exigido: f.alt, tuObra: pl + (pl === 1 ? " planta" : " plantas"), estado: "ok" });
+  else if (a.avenidas && pl <= a.avenidas) it.push({ id: "alt", nombre: "Altura", exigido: f.alt, tuObra: pl + " plantas", estado: "rev", nota: "Esa altura solo se admite en parcelas sobre avenidas." });
+  else it.push({ id: "alt", nombre: "Altura", exigido: f.alt, tuObra: pl + " plantas", estado: "no", nota: "Supera la cantidad de plantas admitida." });
+
+  [["rf", "Retiro de frente", v.rFrente, f.rf], ["rfo", "Retiro de fondo", v.rFondo, f.rfo], ["rb", "Retiros laterales", v.rLateral, f.rb]].forEach(function (d) {
+    var R = leerRetiro(d[3]), x = numero(d[2]);
+    if (R.tipo === "sin") return;
+    if (R.tipo === "libre") { it.push({ id: d[0], nombre: d[1], exigido: "No se exige", estado: "ok" }); return; }
+    if (R.tipo === "prohibido") {
+      if (x == null) it.push({ id: d[0], nombre: d[1], exigido: "No se permite retirarse", estado: "sd", nota: "Indicá la distancia. Si la construcción está sobre la línea, poné 0." });
+      else if (x > 0) it.push({ id: d[0], nombre: d[1], exigido: "No se permite retirarse", tuObra: dec(x) + " m", estado: "rev", nota: "La zona pide construir sobre la línea. Consultalo en Planeamiento." });
+      else it.push({ id: d[0], nombre: d[1], exigido: "No se permite retirarse", tuObra: "sobre la línea", estado: "ok" });
+      return;
+    }
+    if (R.tipo === "texto") { it.push({ id: d[0], nombre: d[1], exigido: d[3], estado: "rev", nota: "Depende de la manzana: lo determina tu profesional." }); return; }
+    var ex = R.simple ? "Mínimo " + dec(R.m) + " m" : d[3];
+    if (x == null) { it.push({ id: d[0], nombre: d[1], exigido: ex, estado: "sd", nota: "Falta la distancia." }); return; }
+    if (x + 0.005 < R.m) it.push({ id: d[0], nombre: d[1], exigido: ex, tuObra: dec(x) + " m", estado: "no", nota: "Faltan " + dec(R.m - x) + " m para el mínimo." + (R.simple ? "" : " La zona tiene excepciones: revisalas.") });
+    else it.push({ id: d[0], nombre: d[1], exigido: ex, tuObra: dec(x) + " m", estado: "ok" });
+  });
+
+  // Usos: el código de uso sale del buscador de la Consulta Urbanística; el estado, de la ficha de zona
+  var usoProhibidoExistente = false, infraUsoNuevo = 0;
+  (v.usos || []).forEach(function (u, i) {
+    var base = { id: "uso" + i, nombre: "Uso: " + u.nombre, exigido: u.codigo ? u.codigo + " · " + (u.nombreUso || "") : "Usos admitidos en la zona" };
+    if (!u.codigo) { base.estado = "sd"; base.nota = "Elegí el uso del Código en la parte correspondiente."; it.push(base); return; }
+    var s = f.u[u.codigo], st = s ? s.charAt(0) : "", nota = s && s.indexOf("|") > 0 ? s.split("|")[1] : "";
+    var sec = f.sec ? " La zona tiene sectores con usos adicionales: miralos en la Consulta Urbanística." : "";
+    if (st === "P") { base.estado = "ok"; base.tuObra = "Permitido" + (nota ? " (" + nota + ")" : ""); }
+    else if (st === "C") { base.estado = "rev"; base.tuObra = "Condicionado"; base.nota = "Requiere evaluación de la Dirección de Planeamiento." + (nota ? " " + nota + "." : ""); }
+    else if (st === "X") { base.estado = "rev"; base.tuObra = "Complementario"; base.nota = "Se admite como accesorio de otro uso principal."; }
+    else {
+      base.estado = "no"; base.tuObra = "No figura entre los usos de la zona";
+      base.nota = "Consultá en Planeamiento antes de avanzar." + sec;
+      if (u.sit === "existente") usoProhibidoExistente = true; else infraUsoNuevo++;
+    }
+    it.push(base);
+  });
+
+  var incumple = it.filter(function (x) { return x.estado === "no"; }).length;
+  var res = { items: it, incumple: incumple, faltan: it.filter(function (x) { return x.estado === "sd"; }).length,
+              revisar: it.filter(function (x) { return x.estado === "rev"; }).length, multa: null };
+  // Lo ya construido que no cumple puede ser sancionado; el monto lo fija el Juez de Faltas
+  if (incumple > infraUsoNuevo && v.hayExistente) res.multa = { legal: F.antirreglamentaria, modulo: F.modulo, usoProhibido: usoProhibidoExistente ? F.usoProhibido : null };
+  return res;
+}
+
+/* ---------------- Valores vigentes: archivo verificable y novedades del Digesto ---------------- */
+function aplicarValores(cfg, v) {
+  var cambios = [];
+  function pone(obj, k, nuevo, nombre, esTexto) {
+    if (esTexto ? !(typeof nuevo === "string" && nuevo) : !(typeof nuevo === "number" && isFinite(nuevo) && nuevo > 0)) return;
+    if (obj[k] !== nuevo) { if (nombre) cambios.push({ nombre: nombre, antes: obj[k], ahora: nuevo }); obj[k] = nuevo; }
+  }
+  if (!v || typeof v !== "object") return cambios;
+  var c = v.colegio || {}, m = v.municipio || {}, f = v.faltas || {};
+  pone(cfg.colegio, "UR", c.UR, "Unidad referencial del Colegio");
+  pone(cfg.colegio, "vigenciaUR", c.vigenciaUR, "", true);
+  pone(cfg.municipio, "norma", m.norma, "", true); pone(cfg.municipio, "numero", m.numero, ""); pone(cfg.municipio, "anio", m.anio, "");
+  pone(cfg.municipio, "valoresDe", m.valoresDe, "", true);
+  if (typeof m.url === "string" && /^https:\/\//.test(m.url)) cfg.enlaces.impositiva = m.url;
+  cfg.municipio.lectura = typeof m.lectura === "string" ? m.lectura : "";
+  [["aConstruir", "Derecho de construcción, obra a construir"], ["aConstruirMulti", "Derecho de construcción, multifamiliar a construir"],
+   ["sinPermiso", "Derecho de construcción, obra sin permiso"], ["sinPermisoMulti", "Derecho de construcción, multifamiliar sin permiso"],
+   ["minSinPermiso", "Mínimo por parcela, obra sin permiso"], ["antiguedad70", "Alícuota por antigüedad mayor a 70 años"],
+   ["demolicionCon", "Demolición con permiso"], ["demolicionSin", "Demolición sin permiso"]].forEach(function (d) { pone(cfg.municipio, d[0], m[d[0]], d[1]); });
+  var of = m.oficina || {};
+  cfg.municipio.oficina.forEach(function (o) { pone(o, "valor", of[o.id], o.nombre); });
+  if (typeof m.ploteoA1 === "number" && m.ploteoA1 > 0) pone(cfg.ploteo, "precioM2", m.ploteoA1 / cfg.ploteo.formatos.A1, "Precio de referencia por m² de ploteo");
+  pone(cfg.faltas, "modulo", f.modulo, "Valor del módulo de multas");
+  if (typeof v.verificado === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v.verificado)) cfg.actualizado = v.verificado.split("-").reverse().join("/");
+  return cambios;
+}
+/* posts: publicaciones del Concejo que releva el Digesto. Devuelve normas posteriores a las cargadas.
+   visto (opcional): { impositiva: {n, y}, faltas: {n, y} } marca hasta dónde ya se revisó a mano. */
+function novedadesDigesto(posts, cfg, visto) {
+  var out = [], M = cfg.municipio, F = cfg.faltas, V = visto || {};
+  function tope(a, n, v) { return v && (Number(v.y) > a || (Number(v.y) === a && Number(v.n) > n)) ? [Number(v.y), Number(v.n)] : [a, n]; }
+  var tI = tope(M.anio, M.numero, V.impositiva), tF = tope(F.anio, F.numero, V.faltas);
+  Object.keys(posts || {}).forEach(function (k) {
+    var p = posts[k]; if (!p || p.t !== "ord" || !p.titulo) return;
+    var t = norm(p.titulo), y = Number(p.y) || 0, n = Number(p.n) || 0;
+    var posterior = function (tp) { return y > tp[0] || (y === tp[0] && n > tp[1]); };
+    if (/ordenanza impositiva|fiscal e impositiva|impositiva/.test(t) && posterior(tI)) out.push({ tipo: "impositiva", titulo: p.titulo, link: p.link || "", y: y, n: n, fecha: p.fecha_post || "" });
+    else if (/codigo de faltas|faltas y contravenciones|codigo contravencional/.test(t) && posterior(tF)) out.push({ tipo: "faltas", titulo: p.titulo, link: p.link || "", y: y, n: n, fecha: p.fecha_post || "" });
+  });
+  return out.sort(function (a, b) { return b.y - a.y || b.n - a.n; });
+}
+
+/* ---------------- Lectura automática de las fuentes ----------------
+   La usa herramientas/actualizar_valores.js (GitHub Actions). Son lecturas tolerantes: si algo no se
+   reconoce con claridad no se informa, y el archivo de valores queda como estaba. */
+function importe(s) {
+  var t = String(s).replace(/[^\d.,]/g, "").replace(/[.,]+$/, "");
+  if (!t) return NaN;
+  if (/,\d{1,2}$/.test(t)) t = t.replace(/\./g, "").replace(",", "."); else t = t.replace(/[.,]/g, "");
+  return Number(t);
+}
+function porcentajes(s) {
+  var re = /(\d{1,2}(?:[.,]\d{1,3})?)\s*(?:%|por\s+ciento)/gi, out = [], m;
+  while ((m = re.exec(s))) {
+    var v = Math.round(Number(m[1].replace(",", ".")) * 1e6) / 1e8;
+    if (!(v > 0 && v <= 0.1)) continue;                                   // alícuotas, no "al 50 %"
+    var u = out[out.length - 1];
+    if (u && u.v === v && m.index - u.i < 40) continue;                    // "uno por ciento (1 %)"
+    out.push({ v: v, i: m.index });
+  }
+  return out;
+}
+function cercano(ps, i, excluir) {
+  var mejor = null;
+  ps.forEach(function (p) { if (p === excluir) return; var d = Math.abs(p.i - i); if (d <= 220 && (!mejor || d < mejor.d)) mejor = { p: p, d: d }; });
+  return mejor ? mejor.p : null;
+}
+/* Texto de una Ordenanza Impositiva → alícuotas del derecho de construcción y derechos de oficina. */
+function leerImpositiva(texto) {
+  var t = "\n" + String(texto || "").replace(/\r/g, ""), R = { oficina: {}, faltan: [], articulos: {} };
+  var reArt = /\n\s*ART[ÍI]CULO\s+(\d+)\s*[º°o]?\.?\s*(?:bis\s*)?[:.\-–)]/gi;
+  var cab = t.search(/\n[ \t]*(?:CAP[ÍI]TULO[^\n]{0,24})?DERECHOS?\s+DE\s+CONSTRUCCI[OÓ]N[ \t.:\-–]*\n/i);
+  var cap = t;
+  if (cab >= 0) {
+    var resto = t.slice(cab + 10), fin = resto.search(/\n\s*(?:CAP[ÍI]TULO|Cap[íi]tulo|T[ÍI]TULO|T[íi]tulo)\s+[IVXLC\d]+\b/);
+    cap = t.slice(cab, fin >= 0 ? cab + 10 + fin : t.length);
+  }
+  var cortes = [], m; reArt.lastIndex = 0;
+  while ((m = reArt.exec(cap))) cortes.push({ n: Number(m[1]), i: m.index });
+  var arts = cortes.map(function (c, k) { return { n: c.n, s: cap.slice(c.i, k + 1 < cortes.length ? cortes[k + 1].i : cap.length) }; });
+  if (cab < 0) arts = arts.filter(function (a) { return /construcci|demolici/i.test(a.s); });
+  arts.forEach(function (a) {
+    var s = a.s, ps = porcentajes(s); if (!ps.length) return;
+    var iMulti = s.search(/multifamiliar/i), multi = iMulti >= 0 && ps.length > 1 ? cercano(ps, iMulti, ps[0]) : null;
+    if (/cementerio|b[oó]veda|pante[oó]n|sepultura|nicho/i.test(s)) return;
+    if (/demolici/i.test(s.slice(0, 150))) {
+      if (R.demolicionCon == null) {
+        var vs = ps.map(function (p) { return p.v; });
+        R.demolicionCon = Math.min.apply(null, vs); if (vs.length > 1) R.demolicionSin = Math.max.apply(null, vs);
+        R.articulos.demolicion = a.n;
+      }
+    } else if (/setenta|\b70\b|antig[üu]edad/i.test(s) && R.antiguedad70 == null && !/sin\s+(?:el\s+)?(?:correspondiente\s+|previo\s+|debido\s+)?permiso/i.test(s.slice(0, 260))) {
+      R.antiguedad70 = ps[0].v; R.articulos.antiguedad = a.n;
+    } else if (/sin\s+(?:el\s+|la\s+)?(?:correspondiente\s+|previo\s+|previa\s+|debido\s+|debida\s+)?(?:permiso|autorizaci)|clandestin|no\s+declarad|sin\s+declarar|subsistente|empadronamiento/i.test(s)) {
+      if (R.sinPermiso == null) {
+        R.sinPermiso = ps[0].v; if (multi) R.sinPermisoMulti = multi.v;
+        var mm = s.match(/m[ií]nimo[^$]{0,120}\$\s*([\d.,]+)/i); if (mm && isFinite(importe(mm[1]))) R.minSinPermiso = importe(mm[1]);
+        R.articulos.sinPermiso = a.n;
+      }
+    } else if (R.aConstruir == null) {
+      R.aConstruir = ps[0].v; if (multi) R.aConstruirMulti = multi.v; R.articulos.aConstruir = a.n;
+    }
+  });
+  function monto(re) { var x = t.match(re); var v = x ? importe(x[1]) : NaN; return isFinite(v) && v > 0 ? v : null; }
+  var of = { inicio: monto(/inicio\s+de\s+(?:las\s+)?actuaci[oó]n(?:es)?[^$]{0,160}\$\s*([\d.,]+)/i),
+    final: monto(/final\s+de\s+obra[^$]{0,160}\$\s*([\d.,]+)/i), linea: monto(/l[ií]nea\s+municipal[^$]{0,160}\$\s*([\d.,]+)/i) };
+  Object.keys(of).forEach(function (k) { if (of[k]) R.oficina[k] = of[k]; });
+  var pl = monto(/\bA\s?-?1\b[^$\n]{0,120}\$\s*([\d.,]+)/); if (pl) R.ploteoA1 = pl;
+  ["aConstruir", "sinPermiso"].forEach(function (k) { if (R[k] == null) R.faltan.push(k); });
+  R.completo = !R.faltan.length && R.sinPermiso >= R.aConstruir;
+  return R;
+}
+/* Página del Colegio (HTML o texto) → valor de la Unidad Referencial. actual: valor cargado hoy. */
+var MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+function leerUR(html, actual) {
+  var t = String(html || "").replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, " ").replace(/<[^>]+>/g, " ")
+    .replace(/&#0?36;|&dollar;/gi, "$").replace(/&nbsp;|&#160;/gi, " ").replace(/&[a-z]+;|&#\d+;/gi, " ").replace(/\s+/g, " ");
+  var re = /(unidad(?:es)?\s+referencial(?:es)?|\bU\.\s?R\.|\bUR\b)[^$]{0,160}\$\s*([\d.]{7,}(?:,\d{1,2})?)/gi, m, c = [];
+  while ((m = re.exec(t))) {
+    var v = importe(m[2]);
+    if (isFinite(v)) c.push({ v: v, ctx: t.slice(Math.max(0, m.index - 220), m.index + m[0].length + 220) });
+    re.lastIndex = m.index + m[1].length;
+  }
+  var nuevo = null;
+  c.forEach(function (x) { if (x.v > actual && x.v <= actual * 2.5 && (!nuevo || x.v > nuevo.v)) nuevo = x; });
+  var out = { candidatos: c.length, confirma: c.some(function (x) { return x.v === actual; }), nuevo: null };
+  if (nuevo) {
+    var vig = "", f = nuevo.ctx.match(/(?:desde|partir)\s+(?:de(?:l)?\s+)?(?:el\s+)?(?:d[ií]a\s+)?(\d{1,2})\s*[°º]?\s*(?:de\s+)?(enero|febrero|marzo|abril|mayo|junio|julio|agosto|sep?tiembre|octubre|noviembre|diciembre)\s*(?:de(?:l)?\s+)?(\d{4})/i),
+      g = nuevo.ctx.match(/(?:desde|partir)[^\d]{0,20}(\d{1,2})\/(\d{1,2})\/(\d{4})/i);
+    if (f) vig = ("0" + f[1]).slice(-2) + "/" + ("0" + (MESES.indexOf(f[2].toLowerCase().replace("setiembre", "septiembre")) + 1)).slice(-2) + "/" + f[3];
+    else if (g) vig = ("0" + g[1]).slice(-2) + "/" + ("0" + g[2]).slice(-2) + "/" + g[3];
+    out.nuevo = { v: nuevo.v, vigencia: vig };
+  }
+  return out;
+}
+
+/* ---------------- Lectura de un plano ----------------
+   items: textos del PDF con su posición visual { s, x, y, w, h } (ya corregida la rotación de la hoja).
+   Las carátulas traen el rótulo en una celda y el valor en otra: se busca el número más cercano en la misma fila. */
+var ES_NUM = /^\d[\d.,]*(\s*(m2|m²|mts2))?$/i;
+function segmentosDe(items) {
+  var its = items.filter(function (i) { return i.s && String(i.s).trim(); }).slice().sort(function (a, b) { return a.y - b.y || a.x - b.x; });
+  var filas = [];
+  its.forEach(function (it) {
+    var f = null, h = it.h || 8;
+    for (var i = filas.length - 1; i >= 0 && i >= filas.length - 60; i--) {
+      if (Math.abs(filas[i].y - it.y) <= Math.max(2.5, 0.45 * Math.min(h, filas[i].h))) { f = filas[i]; break; }
+    }
+    if (!f) { f = { y: it.y, h: h, it: [] }; filas.push(f); }
+    f.it.push(it);
+  });
+  var segs = [];
+  filas.forEach(function (f) {
+    f.it.sort(function (a, b) { return a.x - b.x; });
+    var cur = null;
+    f.it.forEach(function (it) {
+      var h = it.h || 8, t = String(it.s).trim();
+      if (cur) {
+        var gap = it.x - (cur.x + cur.w);
+        if (gap <= 0.8 * h) { cur.s += (gap > 0.15 * h ? " " : "") + t; cur.w = it.x + (it.w || 0) - cur.x; return; }
+      }
+      cur = { s: t, x: it.x, y: it.y, w: it.w || 0, h: h }; segs.push(cur);
+    });
+  });
+  return segs;
+}
+function analizarPlano(items, ancho) {
+  ancho = ancho || 1000;
+  var segs = segmentosDe(items), ev = {}, notas = [], destino = "", destinoDebil = "", partida = null, zona = "", nom = null;
+  var NUM = /(?<![a-z\d.,])(\d{1,3}(?:\.\d{3})+(?:,\d+)?|\d+(?:[.,]\d+)?)(?![\d.,]*\d)/g, lim = Math.max(160, 0.2 * ancho);
+  function numeros(t) { var out = [], m; NUM.lastIndex = 0; while ((m = NUM.exec(t))) { var x = numero(m[1]); if (x != null) out.push(x); } return out; }
+  function enFila(a, b) { return Math.abs(a.y - b.y) <= Math.max(3, 0.6 * Math.min(a.h, b.h)); }
+  function vecino(L, filtro) {          // segmento más cercano en la misma fila: primero a la derecha, después a la izquierda
+    var der = null, dd = 1e9, izq = null, di = 1e9;
+    segs.forEach(function (s) {
+      if (s === L || !filtro(s) || !enFila(s, L)) return;
+      var d1 = s.x - (L.x + L.w), d2 = L.x - (s.x + s.w);
+      if (d1 >= -1 && d1 <= lim && d1 < dd) { der = s; dd = d1; }
+      if (d2 >= -1 && d2 <= lim && d2 < di) { izq = s; di = d2; }
+    });
+    return der || izq;
+  }
+  function debajo(L, filtro) {
+    var b = null, bd = 1e9;
+    segs.forEach(function (s) {
+      var dy = s.y - L.y; if (s === L || !filtro(s) || dy <= 0.5 * L.h || dy > 3.2 * L.h) return;
+      if (Math.abs(s.x - L.x) > Math.max(20, L.w)) return;
+      if (dy < bd) { b = s; bd = dy; }
+    });
+    return b;
+  }
+  var esNum = function (s) { return ES_NUM.test(s.s); };
+  segs.forEach(function (L) {
+    var t = norm(L.s), x;
+    // Destino
+    if ((x = t.match(/^destino\b\s*:?\s*(.*)$/))) {
+      if (x[1].length > 2 && !destino) destino = x[1];
+      else if (!x[1] && !destinoDebil) { var bd = debajo(L, function (s) { return !esNum(s) && s.s.length > 3; }); if (bd) destinoDebil = norm(bd.s); }
+    }
+    // Partida
+    if (!partida && /partida/.test(t)) {
+      var mp = t.match(/partida\D{0,40}?(?:0?94\s*-\s*)?0*(\d{3,6})\b/);
+      if (!mp) { var vp = vecino(L, function (s) { return /^(0?94\s*-\s*)?\d{3,6}$/.test(s.s.trim()); }); if (vp) mp = vp.s.match(/(?:0?94\s*-\s*)?0*(\d{3,6})$/); }
+      if (mp) partida = Number(mp[1]);
+    }
+    if (!zona && (x = L.s.match(/\bzona\s+([A-Za-z]{1,5}\d?(?:-[A-Za-z0-9]+)?)/i))) zona = x[1];
+    // Superficies
+    if (!/sup|cubiert|semicub|terreno/.test(t) || /libre|absorbente|\bfos\b|\bfot\b|factor|silueta|balance/.test(t)) return;
+    var semi = /semi\s*-?\s*cub/.test(t), cub = !semi && /cubiert|\bcub\b|\bcub\./.test(t);
+    var clase = /demol/.test(t) ? "demo" :
+      /empadron|sin permiso|s\/ ?permiso|declarar|a incorporar|a regularizar|subsist|clandest|sin plano|a relevar|relevad/.test(t) ? "ex" :
+      /a construir|a ampliar|ampliacion|proyectad|nueva|a ejecutar/.test(t) ? "cons" :
+      /existente|aprobad|con permiso|c\/ ?permiso|antecedente|declarad/.test(t) ? "decl" :
+      (/terreno|lote|parcela|predio/.test(t) && !cub && !semi) ? "terreno" : null;
+    if (!clase) return;
+    var ns = numeros(t.replace(/m\s?2\b|m²|mts?\.?\s?2\b/g, " ")), val = null;
+    if (ns.length) val = ns[ns.length - 1];
+    else { var v = vecino(L, esNum) || debajo(L, esNum); if (v) val = numeros(norm(v.s).replace(/m\s?2\b|m²/g, " "))[0]; }
+    if (val == null) return;
+    var k = clase === "terreno" ? "terreno" : clase + (semi ? "Semi" : "Cub");
+    if (!ev[k]) ev[k] = { vals: [], totales: [], lineas: [] };
+    var lista = /total/.test(t) ? ev[k].totales : ev[k].vals, r2 = Math.round(val * 100) / 100;
+    if (lista.indexOf(r2) < 0) lista.push(r2);
+    ev[k].lineas.push(L.s.replace(/\s*:\s*$/, "") + " → " + String(r2).replace(".", ","));
+  });
+  if (!partida) segs.some(function (s) { var m = s.s.trim().match(/^0?94\s*-\s*0*(\d{3,6})$/); if (m) partida = Number(m[1]); return !!m; });
+  if (!destino) destino = destinoDebil;
+  if (!destino) segs.some(function (sg) { var t = norm(sg.s); if (/^(vivienda( unifamiliar| multifamiliar)?|local( comercial)?|comercio|galpon|deposito|industria|oficinas?)$/.test(t)) { destino = t; return true; } return false; });
+  // Nomenclatura: fila de encabezados (Circ., Secc., Mz., Pc…) y valores en la fila de abajo
+  var CLAVES = [/^circ/, /^secc/, /^ch/, /^q(t|ta|uinta)/, /^fr/, /^m(z|anz)/, /^(pc|parc|lote)/];
+  var cab = items.filter(function (i) { var t = norm(i.s); return t.length <= 9 && CLAVES.some(function (re) { return re.test(t); }); });
+  var circ = cab.filter(function (i) { return /^circ/.test(norm(i.s)); })[0];
+  if (circ) {
+    nom = ["", "", "", "", "", "", ""];
+    cab.forEach(function (hd) {
+      if (Math.abs(hd.y - circ.y) > 4) return;
+      var idx = -1, t = norm(hd.s); CLAVES.forEach(function (re, i) { if (idx < 0 && re.test(t)) idx = i; });
+      var b = null, bd = 1e9, h = hd.h || 10;
+      items.forEach(function (v) {
+        var dy = v.y - hd.y, tv = String(v.s).trim(); if (dy <= 0.5 * h || dy > 3.5 * h || tv.length > 5 || !/^[\dA-Za-z]+$/.test(tv)) return;
+        var dx = Math.abs((v.x + (v.w || 0) / 2) - (hd.x + (hd.w || 0) / 2)); if (dx > Math.max(18, (hd.w || 0))) return;
+        if (dx < bd) { b = v; bd = dx; }
+      });
+      if (b && idx >= 0) nom[idx] = String(b.s).trim();
+    });
+    if (!nom.some(Boolean)) nom = null;
+  }
+  var c = {};
+  Object.keys(ev).forEach(function (k) {
+    var e = ev[k];
+    c[k] = e.totales.length ? Math.max.apply(null, e.totales) : (k === "terreno" ? e.vals[0] : e.vals.reduce(function (a, b) { return a + b; }, 0));
+    c[k] = Math.round(c[k] * 100) / 100;
+  });
+  // Plano de empadronamiento sin antecedente: lo "existente" es lo que se declara
+  var todo = norm(segs.map(function (s) { return s.s; }).join(" "));
+  if ((c.declCub || c.declSemi) && !c.exCub && !c.exSemi && !c.consCub && !c.consSemi && /empadron/.test(todo) && !/antecedente|conforme a obra/.test(todo)) {
+    if (c.declCub) { c.exCub = c.declCub; delete c.declCub; }
+    if (c.declSemi) { c.exSemi = c.declSemi; delete c.declSemi; }
+    notas.push("El plano es de empadronamiento y no cita un antecedente: la superficie existente se tomó como obra sin plano.");
+  }
+  var lineas = []; Object.keys(ev).forEach(function (k) { ev[k].lineas.forEach(function (l) { lineas.push(l); }); });
+  return { campos: c, evidencia: lineas, notas: notas, destino: destino, partida: partida, zona: zona, nom: nom,
+           hay: Object.keys(c).length > 0 || !!destino || !!partida, texto: todo.length };
+}
+
+if (typeof module !== "undefined") module.exports = { CFG: CFG, DEST: DEST, REGLAS: REGLAS, calcular: calcular, honorarioPD: honorarioPD, honorarioMedicion: honorarioMedicion,
+  detectarDestino: detectarDestino, categoriaVivienda: categoriaVivienda, resolverParte: resolverParte, interpretarUso: interpretarUso, aplicarValores: aplicarValores, novedadesDigesto: novedadesDigesto, leerImpositiva: leerImpositiva, leerUR: leerUR, importe: importe, verificar: verificar,
+  analizarPlano: analizarPlano, segmentosDe: segmentosDe, numero: numero, leerRetiro: leerRetiro, leerAltura: leerAltura, norm: norm };
+
+</script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var pesos = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
+  var dec = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 2 });
+  var P = function (n) { return "$ " + pesos.format(Math.round(n)); };
+  var pct = function (x) { return dec.format(x * 100) + " %"; };
+  var esc = function (s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
+  var FC = CFG.colegio.UR / 20;
+  var SIT = { construir: "A construir", existente: "Existente sin plano", demoler: "A demoler" };
+  var D = window.COU_DATOS || null;
+  var ROMAN = { 1: "I", 2: "II", 3: "III", 4: "IV", 5: "V", 6: "VI", 7: "VII", 8: "VIII", 9: "IX", 10: "X", 11: "XI", 12: "XII", 13: "XIII", 14: "XIV", 15: "XV", 16: "XVI", 17: "XVII" };
+  var NOM = ["Circ.", "Secc.", "Ch.", "Qta.", "Fr.", "Mz.", "Pc."];
+  var AP = '<span class="aprox" title="Valor aproximado">≈</span> ';
+
+  var EJEMPLOS = {
+    nueva: { partes: [{ texto: "casa", sit: "construir", cub: 90, semi: 12 }], declarada: 0 },
+    declarar: { partes: [{ texto: "casa", sit: "existente", cub: 75, semi: 0 }], declarada: 0 },
+    mixto: { partes: [{ texto: "ampliación de la casa", sit: "construir", cub: 40, semi: 10 }, { texto: "quincho", sit: "existente", cub: 28, semi: 0 }], declarada: 85 },
+    local: { partes: [{ texto: "local comercial", sit: "construir", cub: 60, semi: 0 }], declarada: 0 }
+  };
+  var partes = [], seq = 0, viv = {}, parcela = null, tab = "inicio", ultimo = null;
+  function nuevaParte(p) { return { id: ++seq, texto: p.texto || "", sit: p.sit || "construir", cub: p.cub == null ? 0 : p.cub, semi: p.semi || 0, opcion: null, manual: null, coefManual: 1, verLista: false, uso: null }; }
+  function cargarEjemplo(k) { partes = EJEMPLOS[k].partes.map(nuevaParte); $("declarada").value = EJEMPLOS[k].declarada; pintarPartes(); recalcular(); }
+
+  /* ---------- Parcela ---------- */
+  function nomTexto(r) { var o = []; for (var i = 0; i < 7; i++) if (r[1 + i]) o.push(NOM[i] + " " + r[1 + i]); return o.join(" · ") || "Sin nomenclatura en la base"; }
+  function partidaTexto(p) { return p ? "094-" + ("000000" + p).slice(-6) : "sin partida"; }
+  function mensaje(id, t) { var el = $(id); el.textContent = t || ""; el.hidden = !t; }
+  function listar(rows) {
+    $("res-parcela").innerHTML = rows.length > 1 ? rows.slice(0, 12).map(function (r, i) {
+      return '<button type="button" data-i="' + i + '">Partida ' + partidaTexto(r[0]) + " · " + esc(nomTexto(r)) + " · zona " + esc(D.zonas[r[8]] || "sin asignar") + "</button>";
+    }).join("") : "";
+    $("res-parcela")._rows = rows;
+  }
+  function buscarPartida() {
+    if (!D) return mensaje("msg-parcela", "No se pudo cargar la base de parcelas. Elegí la zona y cargá la superficie a mano.");
+    var t = $("partida").value.trim().replace(/^0?94\s*-\s*/, "").replace(/\D/g, ""), n = Number(t);
+    if (!n) return mensaje("msg-parcela", "Escribí el número de partida, sin puntos.");
+    var rows = D.parcelas.filter(function (r) { return r[0] === n; });
+    if (!rows.length) { listar([]); return mensaje("msg-parcela", "No hay una parcela con la partida " + partidaTexto(n) + " en la base. Revisá el número o buscá por nomenclatura."); }
+    mensaje("msg-parcela", rows.length > 1 ? "Hay " + rows.length + " parcelas con esa partida. Elegí la tuya." : "");
+    listar(rows); elegir(rows[0]);
+  }
+  function buscarNomen() {
+    if (!D) return mensaje("msg-parcela", "No se pudo cargar la base de parcelas. Elegí la zona y cargá la superficie a mano.");
+    var v = ["n-c", "n-s", "n-ch", "n-q", "n-f", "n-m", "n-p"].map(function (id) { return $(id).value.trim().toLowerCase().replace(/^0+(?=\w)/, ""); });
+    if (v[0] && /^\d+$/.test(v[0])) v[0] = (ROMAN[+v[0]] || v[0]).toLowerCase();
+    if (!v.some(Boolean)) return mensaje("msg-parcela", "Completá al menos un campo de la nomenclatura.");
+    if (!v[2] && !v[3] && !v[4] && !v[5] && !v[6]) return mensaje("msg-parcela", "Agregá manzana, parcela, chacra, quinta o fracción para acotar la búsqueda.");
+    var rows = D.parcelas.filter(function (r) { return v.every(function (x, i) { return !x || String(r[1 + i] || "").toLowerCase() === x; }); });
+    if (!rows.length) { listar([]); return mensaje("msg-parcela", "No hay parcelas con esa nomenclatura en la base. Revisá la circunscripción y la sección."); }
+    mensaje("msg-parcela", rows.length > 1 ? rows.length + " parcelas coinciden. Elegí la tuya." + (rows.length > 12 ? " Se muestran las primeras 12." : "") : "");
+    listar(rows); elegir(rows[0]);
+  }
+  function elegir(r) {
+    parcela = r;
+    var z = D.zonas[r[8]] || "", k = D.mapa[z] || "";
+    $("zona").value = k; $("terreno").value = r[9] || "";
+    if (r[0]) $("partida").value = r[0];
+    pintarFicha(); recalcular();
+  }
+  function fichaActual() { return D && $("zona").value ? D.fichas[$("zona").value] : null; }
+  function pintarFicha() {
+    var f = fichaActual(), h = "";
+    if (f) {
+      var k = $("zona").value, zp = parcela ? (D.zonas[parcela[8]] || "") : "";
+      var ind = [["FOS", f.fos], ["FOT", f.fot], ["Altura", f.alt], ["Retiro de frente", f.rf], ["Retiro de fondo", f.rfo], ["Retiros laterales", f.rb], ["Densidad", f.den ? f.den + " hab/ha" : ""]]
+        .filter(function (x) { return x[1] && !/^[-–\s]+$/.test(x[1]); });
+      h = '<div class="ficha llega">' +
+        (parcela ? '<span class="id">Partida ' + partidaTexto(parcela[0]) + " · " + esc(nomTexto(parcela)) + "</span>" : "") +
+        '<b class="z">Zona ' + esc(zp && zp !== k ? zp : k) + " · " + esc(f.n) + "</b>" +
+        (ind.length ? '<ul class="indic">' + ind.map(function (x) { return "<li>" + x[0] + " <b>" + esc(x[1]) + "</b></li>"; }).join("") + "</ul>" : '<span class="id">La ficha de esta zona no fija indicadores numéricos: los define la Dirección de Planeamiento.</span>') +
+        '<span class="id">Código de Ordenamiento Urbano, pág. ' + esc(f.pag) + ". " + (f.sec ? "La zona tiene sectores con reglas propias. " : "") + '<a href="' + CFG.enlaces.cou + '">Ver la ficha completa</a></span></div>';
+    }
+    $("ficha-parcela").innerHTML = h;
+  }
+
+  /* ---------- Partes ---------- */
+  function opcionesLista(sel) {
+    var h = '<option value="">Elegí de la lista del Colegio…</option>';
+    DESTINOS.forEach(function (g) {
+      h += '<optgroup label="' + g[0] + '">';
+      g[1].forEach(function (d) { h += '<option value="' + d[0] + '"' + (d[0] === sel ? " selected" : "") + ">" + esc(d[1]) + " · coef. " + dec.format(d[2]) + "</option>"; });
+      h += "</optgroup>";
+    });
+    return h + '<optgroup label="Otro"><option value="otro"' + (sel === "otro" ? " selected" : "") + ">Otro destino: indicar coeficiente</option></optgroup>";
+  }
+  function pintarPartes() {
+    var cont = $("partes"); cont.innerHTML = "";
+    partes.forEach(function (p, i) {
+      var d = document.createElement("div"), n = p.id;
+      d.className = "parte"; d.dataset.sit = p.sit; d.dataset.id = n;
+      d.innerHTML =
+        '<div class="campo c-texto"><label for="x' + n + '">Parte ' + (i + 1) + ': ¿qué es?</label><input type="text" id="x' + n + '" data-k="texto" list="sugerencias" autocomplete="off" placeholder="casa, quincho, local, galpón, pileta…" value="' + esc(p.texto) + '"></div>' +
+        '<div class="campo c-sit"><label for="s' + n + '">Situación</label><select id="s' + n + '" data-k="sit">' +
+          Object.keys(SIT).map(function (k) { return '<option value="' + k + '"' + (k === p.sit ? " selected" : "") + ">" + SIT[k] + "</option>"; }).join("") + "</select></div>" +
+        '<div class="campo"><label for="c' + n + '">Cubierta (m²)</label><input type="number" id="c' + n + '" data-k="cub" min="0" step="0.5" inputmode="decimal" value="' + p.cub + '"></div>' +
+        '<div class="campo"><label for="m' + n + '">Semicubierta (m²)</label><input type="number" id="m' + n + '" data-k="semi" min="0" step="0.5" inputmode="decimal" value="' + p.semi + '"></div>' +
+        '<div class="encuadre" data-enc></div>' +
+        '<div class="pie"><span>Valor referencial de esta parte: <b data-monto></b></span>' +
+        (partes.length > 1 ? '<button type="button" class="quitar" data-quitar aria-label="Quitar la parte ' + (i + 1) + '">Quitar</button>' : "") + "</div>";
+      cont.appendChild(d);
+    });
+  }
+  function pintarEncuadre(p, r, ctx) {
+    var el = document.querySelector('.parte[data-id="' + p.id + '"] [data-enc]'); if (!el) return;
+    if (el.contains(document.activeElement) && document.activeElement.tagName === "INPUT") return;
+    var n = p.id, h = "", duda = false;
+    var lista = '<div class="linea2"><select id="l' + n + '" data-k="manual" aria-label="Encuadre del Colegio">' + opcionesLista(p.manual) + "</select></div>";
+    if (p.manual) {
+      h = "<span>Elegido a mano: <b>" + esc(r.nombre) + '</b> <span class="cod">' + (p.manual === "otro" ? "" : p.manual + " · ") + "coef. " + dec.format(r.coef) + "</span></span>" + lista +
+        (p.manual === "otro" ? '<div class="linea2"><label for="k' + n + '">Coeficiente</label><input type="number" id="k' + n + '" data-k="coefManual" min="0" step="0.05" value="' + p.coefManual + '" style="max-width:110px"></div>' : "") +
+        '<div><button type="button" class="linkbtn" data-auto>Volver a detectar por el nombre</button></div>';
+    } else if (!norm(p.texto)) {
+      duda = true; h = '<span class="pide">Escribí qué es esta parte para encontrar su encuadre.</span>';
+    } else if (r.sinDetectar) {
+      duda = true; h = '<span class="pide">No reconocí «' + esc(p.texto) + "». Probá con otra palabra o elegilo de la lista.</span>" + lista;
+    } else {
+      h = "<span>Encuadre del Colegio: <b>" + esc(r.nombre) + '</b> <span class="cod">' + r.cod + " · coef. " + dec.format(r.coef) + "</span></span>";
+      if (r.auto) h += "<span>Definido " + r.auto + ": " + dec.format(ctx.supEncuadre) + " m².</span>";
+      if (r.opciones) {
+        duda = r.provisorio;
+        h += '<div class="linea2"><label for="o' + n + '"' + (duda ? ' class="pide"' : "") + ">" + (duda ? "Necesito una precisión. " : "") + esc(r.pregunta) + '</label><select id="o' + n + '" data-k="opcion">' +
+          (duda ? '<option value="">Elegí una opción…</option>' : "") +
+          r.opciones.map(function (c, i) { return '<option value="' + i + '"' + (!duda && i === (p.opcion || 0) ? " selected" : "") + ">" + esc(c === "VIV" ? OPCION_VIV : DEST[c].nombre) + "</option>"; }).join("") + "</select></div>";
+        if (duda) h += "<span>Mientras tanto se calcula con la primera opción.</span>";
+      }
+      if (r.esViv && !p.manual) h += "<span>La categoría sale de las características de la vivienda, más abajo.</span>";
+      h += p.verLista ? lista : '<div><button type="button" class="linkbtn" data-lista>No es esto: elegir de la lista</button></div>';
+    }
+    if (r.usoAplica) {
+      if (r.usoFijo) h += '<span class="uso">Uso del Código: <b>VU · ' + esc(D.usos.VU || "Vivienda unifamiliar") + "</b>, con sus dependencias.</span>";
+      else {
+        var ops = r.uso ? "" : '<option value="">Elegí el uso…</option>';
+        if (r.usoCands.length) ops += '<optgroup label="Sugeridos por la Consulta Urbanística">' + r.usoCands.map(function (x) { return '<option value="' + x.c + '"' + (x.c === r.uso ? " selected" : "") + ">" + x.c + " · " + esc(D.usos[x.c] || "") + "</option>"; }).join("") + "</optgroup>";
+        var grupo = "", enSug = {}; r.usoCands.forEach(function (x) { enSug[x.c] = 1; });
+        D.usosDef.forEach(function (u) {
+          if (u[3] !== grupo) { ops += (grupo ? "</optgroup>" : "") + '<optgroup label="' + esc(u[3]) + '">'; grupo = u[3]; }
+          ops += '<option value="' + u[0] + '"' + (u[0] === r.uso && !enSug[u[0]] ? " selected" : "") + ">" + u[0] + " · " + esc(u[1]) + "</option>";
+        });
+        ops += "</optgroup>";
+        if (!r.uso) duda = true;
+        h += '<div class="linea2 uso"><label for="u' + n + '"' + (r.uso ? "" : ' class="pide"') + ">" + (r.uso ? "Uso del Código:" : "No encontré esta actividad en la Consulta Urbanística. Escribí el rubro, por ejemplo kiosco o taller, o elegí el uso:") + '</label><select id="u' + n + '" data-k="uso">' + ops + "</select></div>" +
+          (r.uso && !p.uso && r.usoCands.length > 1 ? "<span>Es el uso que sugiere la Consulta Urbanística para esa actividad y superficie. Cambialo si no corresponde.</span>" : "");
+      }
+    }
+    el.className = "encuadre" + (duda ? " duda" : ""); el.innerHTML = h;
+  }
+
+  /* ---------- Estado y cálculo ---------- */
+  function supDe(p) { return (Number(p.cub) || 0) + (Number(p.semi) || 0); }
+  function resolverTodo() {
+    var decl = Number($("declarada").value) || 0;
+    var pre = partes.map(function (p) { return resolverParte(p, { catViv: "1.2.1.1", supEncuadre: 0 }); });
+    var supViv = decl; pre.forEach(function (r, i) { if (r.esViv && partes[i].sit !== "demoler") supViv += supDe(partes[i]); });
+    var cat = categoriaVivienda(viv, supViv);
+    var porRegla = {};
+    partes.forEach(function (p, i) { var id = pre[i].regla && pre[i].regla.id; if (id && p.sit !== "demoler") porRegla[id] = (porRegla[id] || 0) + supDe(p); });
+    // Lo ya declarado suma a la vivienda si la hay; si no, al destino de la primera parte
+    var declDe = pre.some(function (r) { return r.esViv; }) ? "" : (pre[0] && pre[0].regla ? pre[0].regla.id : "");
+    var res = partes.map(function (p, i) {
+      var id = pre[i].regla && pre[i].regla.id, ctx = { catViv: cat.cod, supEncuadre: (id && id === declDe ? decl : 0) + (porRegla[id] || 0) };
+      var r = resolverParte(p, ctx); r.ctx = ctx; return r;
+    });
+    res.forEach(function (r, i) {
+      var p = partes[i]; r.uso = null; r.usoCands = []; r.usoAplica = false;
+      if (!D || p.sit === "demoler" || r.tipo === "pileta" || !r.coef) return;
+      r.usoAplica = true;
+      if (r.esViv) { r.uso = "VU"; r.usoFijo = true; return; }
+      r.usoCands = interpretarUso(p.texto, r.ctx.supEncuadre || supDe(p), D);
+      r.uso = p.uso || (r.usoCands[0] ? r.usoCands[0].c : null);
+    });
+    return { res: res, cat: cat, supViv: supViv, hayViv: res.some(function (r) { return r.esViv; }), decl: decl };
+  }
+  function recalcular() {
+    var R = resolverTodo(), M = CFG.municipio, C = CFG.colegio;
+    var e = {
+      partes: partes.map(function (p, i) { return { sit: p.sit, cub: p.cub, semi: p.semi, coef: R.res[i].coef, tipo: R.res[i].tipo }; }),
+      proyecto: $("t-proyecto").checked, direccion: $("t-direccion").checked,
+      modalidad: (document.querySelector('input[name="modalidad"]:checked') || {}).value || "unica",
+      antig70: $("antig70").checked, estado: $("estado").value, demolicionSinPermiso: $("demopermiso").value === "sin", linea: $("linea").checked,
+      gastos: { viajes: $("g-viajes").value, valorViaje: $("g-valorviaje").value, formato: $("g-formato").value, laminas: $("g-laminas").value, copias: $("g-copias").value, precioM2: $("g-preciom2").value, otros: $("g-otros").value },
+      incluidos: $("incluidos").checked
+    };
+    var r = calcular(e, CFG), h = r.honorarios, c = r.colegio, m = r.municipio, g = r.gastos;
+
+    // Partes: encuadre y valor
+    partes.forEach(function (p, i) {
+      pintarEncuadre(p, R.res[i], R.res[i].ctx || {});
+      var b = document.querySelector('.parte[data-id="' + p.id + '"] [data-monto]');
+      if (b) b.textContent = r.partes[i].sup > 0 && R.res[i].coef > 0 ? P(r.partes[i].monto) + " (" + dec.format(r.partes[i].sup) + " m² computables)" : (r.partes[i].sup > 0 ? "falta el encuadre" : "cargá la superficie");
+    });
+    $("b-vivienda").hidden = !R.hayViv;
+    if (R.hayViv) {
+      var d = DEST[R.cat.cod];
+      $("txt-categoria").innerHTML = "Resultado: <b>" + esc(d.nombre) + "</b>, coeficiente " + dec.format(d.coef) + ". Cumple " + R.cat.items + (R.cat.items === 1 ? " ítem" : " ítems") + " de ocho" +
+        (R.cat.porSup ? ", incluido el de más de 150 m² totales (" + dec.format(R.supViv) + " m² entre lo declarado, lo existente y lo nuevo)" : "; la superficie total de la vivienda es de " + dec.format(R.supViv) + " m² y no supera los 150") +
+        (viv.country && R.cat.items === 2 && !R.cat.porSup && Object.keys(viv).filter(function (k) { return viv[k]; }).length === 1 ? ". La ubicación en urbanización privada cuenta doble" : "") + ". " + AP + "La categoría definitiva la fija el Colegio al visar.";
+    }
+    $("txt-declarada").textContent = R.decl > 0
+      ? "Los " + dec.format(R.decl) + " m² ya declarados no pagan de nuevo: el profesional los dibuja como antecedente aprobado. Sí cuentan para la categoría y para verificar los indicadores de la zona."
+      : "Si la parcela ya tiene una construcción con plano aprobado, indicá sus metros: no generan nuevos costos, pero cuentan para la categoría y para los indicadores de la zona.";
+    $("b-construir").hidden = !(r.sup.construir > 0);
+    $("b-existente").hidden = !(r.sup.existente > 0);
+    $("b-demoler").hidden = !(r.sup.demoler > 0);
+    $("f-modalidad").hidden = !e.direccion;
+    var bl = document.querySelectorAll("#v-inicio .bloque");
+    bl[0].dataset.listo = fichaActual() ? "1" : "0";
+    bl[1].dataset.listo = r.supTotal > 0 && !R.res.some(function (x, i) { return supDe(partes[i]) > 0 && (x.provisorio || !x.coef || (x.usoAplica && !x.uso)); }) ? "1" : "0";
+    var nPaso = 0;
+    document.querySelectorAll("#v-inicio .bloque").forEach(function (bl) { var s = bl.querySelector(".paso"); if (s && !bl.hidden) s.textContent = ++nPaso; });
+
+    // Verificación del COU
+    var f = fichaActual(), V = null;
+    var cuenta = partes.filter(function (p, i) { return p.sit !== "demoler" && R.res[i].tipo !== "pileta"; });
+    var sumaCub = R.decl + cuenta.reduce(function (a, p) { return a + (Number(p.cub) || 0) + 0.5 * (Number(p.semi) || 0); }, 0);
+    var sumaTodo = R.decl + cuenta.reduce(function (a, p) { return a + supDe(p); }, 0);
+    var plantas = $("v-plantas").value, huellaIn = $("v-huella").value;
+    var huella = huellaIn !== "" ? huellaIn : (plantas === "1" ? sumaTodo : "");
+    $("v-huella").placeholder = plantas === "1" ? dec.format(sumaTodo) : "";
+    $("txt-huella").textContent = plantas === "1"
+      ? "Con una sola planta, si dejás vacía la superficie en planta baja se usa la suma de lo cargado: " + dec.format(sumaTodo) + " m². Para el FOT se cuenta la superficie cubierta más la mitad de la semicubierta: " + dec.format(sumaCub) + " m². Las piletas no se suman."
+      : "Con más de una planta, indicá cuánto ocupa la construcción en planta baja. Para el FOT se cuenta la superficie cubierta de todas las plantas más la mitad de la semicubierta: " + dec.format(sumaCub) + " m². Las piletas no se suman.";
+    if (f) {
+      var usos = [], vistos = {};
+      partes.forEach(function (p, i) {
+        var x = R.res[i]; if (!x.usoAplica || supDe(p) <= 0) return;
+        var key = (x.uso || "?" + p.id) + p.sit; if (vistos[key]) return; vistos[key] = 1;
+        usos.push({ nombre: p.texto || x.nombre, sit: p.sit, codigo: x.uso, nombreUso: x.uso ? D.usos[x.uso] || "" : "" });
+      });
+      V = verificar({ ficha: f, supTerreno: $("terreno").value, huella: huella, supFOT: sumaCub, plantas: plantas,
+        rFrente: $("v-frente").value, rFondo: $("v-fondo").value, rLateral: $("v-lateral").value, usos: usos,
+        hayExistente: r.sup.existente > 0 }, CFG);
+      pintarVerif(V.items);
+    } else {
+      pintarVerif([{ id: "sinzona", nombre: "Elegí tu parcela o la zona", estado: "sd", exigido: "", nota: "Sin la zona no se puede comparar con el Código." }]);
+    }
+
+    bl[2].dataset.listo = V && !V.faltan ? "1" : "0";
+    ultimo = { r: r, e: e, R: R, V: V, f: f };
+    pintarPanel();
+
+    // Textos de gastos
+    var area = CFG.ploteo.formatos[e.gastos.formato] || 0;
+    $("txt-copias").innerHTML = AP + "Son " + dec.format(g.m2Copias) + " m² de plano: " + (Number(e.gastos.laminas) || 0) + " láminas " + esc(e.gastos.formato) + " de " + dec.format(area) + " m², " + (Number(e.gastos.copias) || 0) + " copias de cada una. El precio por m² toma como referencia el ploteo municipal A1 en blanco y negro (" + P(CFG.ploteo.precioM2 * 0.5) + " por lámina, " + M.valoresDe + "). Una imprenta puede cobrar distinto y el color cuesta más. La cantidad de copias que pide cada oficina puede variar.";
+    $("txt-gastos").innerHTML = AP + "El valor por viaje es el medio día de viaje del arancel. Cuando no se presentan comprobantes, los gastos a cargo del comitente se presumen hasta " + P(g.topePresunto) + " para estos honorarios (Decreto 6964/65, Título I, art. 11).";
+  }
+
+  var IC = { ok: "✓", no: "✕", rev: "?", sd: "…" }, TXE = { ok: "Cumple", no: "No cumple", rev: "A revisar", sd: "Falta un dato" };
+  function pintarVerif(items) {
+    var ul = $("lista-verif"), viejos = {};
+    Array.prototype.forEach.call(ul.children, function (li) { viejos[li.dataset.id] = li; });
+    items.forEach(function (x) {
+      var li = viejos[x.id], nuevo = !li;
+      if (nuevo) { li = document.createElement("li"); li.dataset.id = x.id; li.innerHTML = '<span class="ic" aria-hidden="true"></span><span class="v1"></span><span class="v2"></span><div class="medidor" hidden><i></i><b></b></div><span class="v3"></span>'; }
+      else delete viejos[x.id];
+      var cambio = !nuevo && li.dataset.e !== x.estado && (x.estado === "no" || x.estado === "ok");
+      li.dataset.e = x.estado;
+      li.children[0].textContent = IC[x.estado];
+      li.children[1].innerHTML = "<b>" + esc(x.nombre) + "</b>" + (x.id === "sinzona" ? "" : " · " + TXE[x.estado]);
+      li.children[2].textContent = (x.exigido ? "Zona: " + x.exigido : "") + (x.tuObra ? " · Tu obra: " + x.tuObra : "");
+      li.children[2].hidden = !x.exigido && !x.tuObra;
+      var md = li.children[3];
+      if (x.med) {
+        var tope = Math.max(x.med.lim * 1.25, x.med.v * 1.05);
+        md.hidden = false; md.children[1].style.left = (x.med.lim / tope * 100) + "%";
+        md.title = "Tu obra frente al máximo de la zona";
+        var w = Math.min(100, x.med.v / tope * 100) + "%";
+        if (nuevo) requestAnimationFrame(function () { requestAnimationFrame(function () { md.children[0].style.width = w; }); }); else md.children[0].style.width = w;
+      } else md.hidden = true;
+      li.children[4].textContent = x.nota || ""; li.children[4].hidden = !x.nota;
+      ul.appendChild(li);
+      if (cambio) { li.classList.remove("cambio"); void li.offsetWidth; li.classList.add("cambio"); }
+    });
+    Object.keys(viejos).forEach(function (k) { ul.removeChild(viejos[k]); });
+  }
+  var sinMovimiento = false; try { sinMovimiento = window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (err) { /* sin matchMedia */ }
+  function animarTotal(valor) {
+    var els = [$("o-total"), $("o-barra")], desde = animarTotal.v || 0; animarTotal.v = valor;
+    cancelAnimationFrame(animarTotal.raf);
+    if (sinMovimiento || Math.abs(valor - desde) < 1 || !window.requestAnimationFrame) { els.forEach(function (e) { e.textContent = P(valor); }); return; }
+    var t0 = null, dur = 520;
+    (function paso(t) {
+      if (t0 == null) t0 = t; var k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3), v = desde + (valor - desde) * e;
+      els.forEach(function (el) { el.textContent = P(v); });
+      if (k < 1) animarTotal.raf = requestAnimationFrame(paso);
+    })(performance.now());
+  }
+
+  /* ---------- Panel de resultados ---------- */
+  function renglon(con, imp, extra, clase, aclara) {
+    return '<div class="renglon' + (clase ? " " + clase : "") + '"><span class="con">' + con + (extra ? "<small>" + extra + "</small>" : "") + (aclara ? '<small class="ac">≈ ' + aclara + "</small>" : "") + '</span><span class="pts"></span><span class="imp">' + imp + "</span></div>";
+  }
+  function grupo(titulo, total, filas, n, parte) { return '<div class="grupo"><h3><span style="font-family:inherit;color:inherit;letter-spacing:inherit;white-space:normal">' + (n ? '<i class="pt c' + n + '"></i>' : "") + titulo + (parte != null ? "<em>" + Math.round(parte * 100) + " %</em>" : "") + "</span><span>" + total + "</span></h3>" + filas.join("") + "</div>"; }
+  function modulos(a) { return pesos.format(a[0]) + " a " + pesos.format(a[1]) + " módulos"; }
+  function marcoMulta(mu) {
+    return "Marco legal: el Código de Faltas prevé para una obra antirreglamentaria de " + modulos(mu.legal) + " (art. 89) y puede ordenar adecuarla o demolerla. " +
+      (mu.usoProhibido ? "Para una actividad que funciona donde la zonificación no la admite, de " + modulos(mu.usoProhibido) + " (art. 100). " : "") +
+      "Las multas se fijan en módulos municipales y cuántos corresponden lo decide el Juez de Faltas." + (CFG.faltas.modulo ? " Valor del módulo: " + P(CFG.faltas.modulo) + "." : "");
+  }
+  function pintarPanel() {
+    if (!ultimo) return;
+    var r = ultimo.r, e = ultimo.e, V = ultimo.V, h = r.honorarios, c = r.colegio, m = r.municipio, g = r.gastos, M = CFG.municipio, C = CFG.colegio;
+    var det = tab === "detalle";
+    if (r.supTotal <= 0) {
+      animarTotal(0); $("o-sub").textContent = ""; Array.prototype.forEach.call($("o-compo").children, function (sp) { sp.style.width = "0"; });
+      $("o-grupos").innerHTML = '<p class="vacio">Cargá qué es y la superficie de al menos una parte para ver la estimación.</p>';
+      $("o-cou").innerHTML = ""; $("o-fuera").innerHTML = ""; $("o-supuestos").innerHTML = ""; return;
+    }
+    var G = [], f;
+    // Honorarios
+    f = [];
+    if (det) {
+      if (h.proyecto) f.push(renglon("Proyecto", P(h.proyecto)));
+      if (h.direccion) f.push(renglon("Dirección de obra", P(h.direccion)));
+      if (h.suplemento) f.push(renglon("Suplemento de dirección", P(h.suplemento), e.modalidad === "separados" ? "por contratos separados" : "por administración"));
+      if (h.medicion) f.push(renglon("Medición y planos de lo existente", P(h.medicion)));
+      if (h.informe) f.push(renglon("Informe técnico con inspección", P(h.informe)));
+      if (h.demolicion) f.push(renglon("Demolición", P(h.demolicion)));
+      if (h.ajusteMinimo) f.push(renglon("Ajuste al mínimo del arancel", P(h.ajusteMinimo)));
+      if (!f.length) f.push('<p class="vacio">Marcá al menos una tarea para lo que vas a construir.</p>');
+    }
+    f.push(renglon("", "", "", "", "Son mínimos de referencia del Colegio: el profesional puede convenir más, y la categoría la confirma el Colegio al visar.").replace('<span class="pts"></span><span class="imp"></span>', ""));
+    G.push(grupo("Honorarios mínimos de referencia", P(h.total), f, 1, h.total / r.total));
+    // Colegio y Caja
+    f = []; var tach = e.incluidos ? "tachado" : "";
+    if (det) {
+      if (c.cep) f.push(renglon("Tasa de visado del Colegio (CEP)", P(c.cep), c.cep <= C.cepMinimoFC * FC + 0.5 ? "importe mínimo" : pct(C.cepAlicuota) + " del honorario", tach, "Alícuota deducida de liquidaciones del Colegio; puede llevar descuento."));
+      if (c.aportes) f.push(renglon("Aporte a la Caja (CAAITBA)", P(c.aportes), pct(C.aporteCaja) + " del honorario, Ley 12.490", tach));
+      if (c.art29) f.push(renglon("Contribución art. 29, Ley 12.490", P(c.art29), "por obra que nunca se declaró", "", "La liquida la Caja y puede tener excepciones."));
+    } else if (c.art29) f.push(renglon("", "", "", "", "Incluye la contribución del art. 29 por obra no declarada (" + P(c.art29) + "); la liquida la Caja.").replace('<span class="pts"></span><span class="imp"></span>', ""));
+    if (c.cep || c.art29) G.push(grupo("Colegio y Caja de Previsión", P(r.colegioSumado), f, 2, r.colegioSumado / r.total));
+    // Municipalidad
+    f = [];
+    var acOf = "Importe de " + M.valoresDe + "; la ordenanza prevé ajuste trimestral por inflación.";
+    if (det) {
+      if (m.construir) f.push(renglon("Derecho de construcción, obra nueva", P(m.construir), "sobre " + P(r.monto.construir) + ", art. 15", "", "Se liquida con la unidad referencial vigente ese día."));
+      if (m.existente) f.push(renglon("Derecho de construcción, obra sin permiso", P(m.existente), (m.ajusteMinimo ? "mínimo por parcela, art. 16" : (e.antig70 ? "alícuota reducida por antigüedad, art. 17, " : "art. 16, ") + "sobre " + P(r.monto.existente)), "", "Ya incluye el recargo por construir sin permiso. La liquidación vale 60 días."));
+      if (m.demoler) f.push(renglon("Derecho por demolición", P(m.demoler), "art. 19, sobre el valor como obra nueva"));
+      m.oficina.forEach(function (o) { f.push(renglon(o.nombre, P(o.valor), "art. 14", "", acOf)); });
+    } else f.push(renglon("", "", "", "", "Derecho de construcción más derechos de oficina (" + P(m.oficinaTotal) + ", valores de " + M.valoresDe + "). No incluye multas.").replace('<span class="pts"></span><span class="imp"></span>', ""));
+    G.push(grupo("Municipalidad", P(m.total), f, 3, m.total / r.total));
+    // Gastos
+    f = [];
+    if (det) {
+      if (g.copias) f.push(renglon("Copias de planos", P(g.copias), dec.format(g.m2Copias) + " m² de ploteo", "", "Estimado con la tarifa municipal de ploteo."));
+      if (g.viaticos) f.push(renglon("Viáticos", P(g.viaticos), e.gastos.viajes + " viajes", "", "Valor de arancel por medio día de viaje."));
+      if (g.otros) f.push(renglon("Sellados y otros", P(g.otros)));
+    } else if (g.total) f.push(renglon("", "", "", "", "Copias de planos" + (g.viaticos ? ", viáticos" : "") + (g.otros ? " y sellados" : "") + ": precios orientativos.").replace('<span class="pts"></span><span class="imp"></span>', ""));
+    if (g.total) G.push(grupo("Gastos del trámite", P(g.total), f, 4, g.total / r.total));
+    $("o-grupos").innerHTML = G.join("");
+    $("o-grupos").style.cssText = "display:flex;flex-direction:column;gap:16px";
+
+    animarTotal(r.total);
+    [h.total, r.colegioSumado, m.total, g.total].forEach(function (v, i) { $("o-compo").children[i].style.width = (r.total > 0 ? v / r.total * 100 : 0) + "%"; });
+    var d2 = [];
+    if (r.sup.construir) d2.push(dec.format(r.sup.construir) + " m² a construir");
+    if (r.sup.existente) d2.push(dec.format(r.sup.existente) + " m² a declarar");
+    if (r.sup.demoler) d2.push(dec.format(r.sup.demoler) + " m² a demoler");
+    $("o-sub").textContent = d2.join(" · ") + ". Equivale a " + P(r.total / r.supTotal) + " por m². No incluye multas.";
+
+    // Código y multa
+    var hc = "";
+    if (V) {
+      var p = [];
+      if (V.incumple) p.push('<span class="pill no">' + V.incumple + (V.incumple === 1 ? " indicador no cumple" : " indicadores no cumplen") + "</span>");
+      if (V.revisar) p.push('<span class="pill rev">' + V.revisar + " a revisar</span>");
+      if (V.faltan) p.push('<span class="pill rev">' + V.faltan + (V.faltan === 1 ? " dato pendiente" : " datos pendientes") + "</span>");
+      if (!V.incumple && !V.revisar && !V.faltan) p.push('<span class="pill ok">Cumple los indicadores cargados</span>');
+      hc += '<div class="grupo"><h3 style="color:var(--tinta-2)">Código de Ordenamiento Urbano</h3><div class="estadoCOU">' + p.join("") + "</div></div>";
+      if (V.multa) {
+        hc += '<div class="multa"><h3>Puede corresponder una multa</h3>' +
+          "<p>Con lo que cargaste, lo ya construido no cumple " + (V.incumple === 1 ? "un indicador" : V.incumple + " indicadores") + " de la zona. <b>La multa la define el Juez de Faltas</b> en cada caso: esta planilla no la estima ni la suma al total.</p>" +
+          "<p><small>" + marcoMulta(V.multa) + "</small></p></div>";
+      } else if (V.incumple) {
+        hc += '<div class="multa"><h3>El proyecto necesita ajustes</h3><p>Con estos datos la obra a construir no cumple los indicadores de la zona y no se aprobaría así. No hay multa porque todavía no se construyó: revisalo con tu profesional antes de presentar.</p></div>';
+      } else if (r.hayExistente) {
+        hc += '<p class="supuestos">' + (V.faltan || V.revisar ? "Completá o revisá los datos de la verificación para saber si puede corresponder una multa por incumplir el Código." : "Con lo que cargaste no surge una multa por indicadores. El recargo por haber construido sin permiso ya está en el derecho de construcción.") + "</p>";
+      }
+    } else if (r.hayExistente || r.sup.construir > 0) {
+      hc = '<p class="supuestos">Elegí tu parcela o la zona para verificar los indicadores del Código y saber si puede corresponder una multa.</p>';
+    }
+    $("o-cou").innerHTML = hc;
+    var clave = V && V.multa ? "m" : V && V.incumple ? "p" : "";
+    if (clave && clave !== pintarPanel.clave) { var caja = $("o-cou").querySelector(".multa"); if (caja) caja.classList.add("llega"); }
+    pintarPanel.clave = clave;
+
+    var sp = [];
+    if (r.sup.construir > 0) sp.push((e.proyecto ? "proyecto" : "") + (e.proyecto && e.direccion ? " y " : "") + (e.direccion ? "dirección de obra " + (e.modalidad === "separados" ? "con gremios por separado" : e.modalidad === "administracion" ? "por administración" : "con una empresa") : ""));
+    sp.push((Number(e.gastos.copias) || 0) + " copias de " + (Number(e.gastos.laminas) || 0) + " láminas " + esc(e.gastos.formato));
+    $("o-supuestos").innerHTML = det ? "" : "Supuestos: " + sp.join("; ") + '. <button type="button" class="linkbtn" data-ir="detalle">Cambiarlos y ver el cálculo renglón por renglón</button>';
+
+    var fuera = ["El costo de construir la obra: materiales y mano de obra."];
+    fuera.push("Multas del Juzgado de Faltas, si correspondieran.");
+    fuera.push("Otros especialistas que la obra pueda requerir: agrimensor, estructuras, estudio de suelos, instalaciones.");
+    fuera.push("El sellado del contrato ante ARBA, si se firma por escrito.");
+    $("o-fuera").innerHTML = det ? '<h3 style="color:var(--tinta-2)">No incluido en el total</h3><ul style="margin:0;padding-left:1.1em;font-size:.86rem;color:var(--tinta-2);display:flex;flex-direction:column;gap:3px">' + fuera.map(function (t) { return "<li>" + t + "</li>"; }).join("") + "</ul>" : "";
+  }
+
+  function resumenTexto() {
+    if (!ultimo || ultimo.r.supTotal <= 0) return "";
+    var r = ultimo.r, e = ultimo.e, R = ultimo.R, V = ultimo.V, h = r.honorarios, c = r.colegio, m = r.municipio, g = r.gastos, L = [];
+    L.push("ESTIMACIÓN DE EXPEDIENTE DE OBRA · San Andrés de Giles");
+    L.push("Valores al " + CFG.actualizado + " · UR " + P(CFG.colegio.UR) + " por m²");
+    if (parcela) L.push("Parcela: partida " + partidaTexto(parcela[0]) + " · " + nomTexto(parcela));
+    if (ultimo.f) L.push("Zona: " + $("zona").value + " · " + ultimo.f.n + " · terreno " + ($("terreno").value || "s/d") + " m²");
+    L.push("");
+    partes.forEach(function (p, i) {
+      if (r.partes[i].sup <= 0) return;
+      L.push("- " + SIT[p.sit] + ": " + (p.texto || "sin nombre") + " → " + (R.res[i].nombre || "sin encuadre") + ", " + dec.format(r.partes[i].sup) + " m² computables, valor referencial " + P(r.partes[i].monto));
+    });
+    if (R.decl) L.push("- Ya declarado con plano aprobado: " + dec.format(R.decl) + " m²");
+    L.push("");
+    L.push("HONORARIOS MÍNIMOS DE REFERENCIA: " + P(h.total));
+    [["Proyecto", h.proyecto], ["Dirección de obra", h.direccion], ["Suplemento de dirección", h.suplemento], ["Medición y planos", h.medicion], ["Informe técnico", h.informe], ["Demolición", h.demolicion], ["Ajuste al mínimo", h.ajusteMinimo]]
+      .forEach(function (x) { if (x[1]) L.push("  " + x[0] + ": " + P(x[1])); });
+    L.push("COLEGIO Y CAJA: " + P(r.colegioSumado) + (e.incluidos ? " (CEP y aporte incluidos en el honorario)" : ""));
+    if (c.cep) L.push("  Tasa de visado (CEP): " + P(c.cep));
+    if (c.aportes) L.push("  Aporte CAAITBA: " + P(c.aportes));
+    if (c.art29) L.push("  Contribución art. 29: " + P(c.art29));
+    L.push("MUNICIPALIDAD: " + P(m.total));
+    if (m.construir) L.push("  Derecho de construcción, obra nueva: " + P(m.construir));
+    if (m.existente) L.push("  Derecho de construcción, obra sin permiso: " + P(m.existente));
+    if (m.demoler) L.push("  Derecho por demolición: " + P(m.demoler));
+    m.oficina.forEach(function (o) { L.push("  " + o.nombre + ": " + P(o.valor)); });
+    if (g.total) L.push("GASTOS DEL TRÁMITE: " + P(g.total));
+    L.push("");
+    L.push("TOTAL ESTIMADO (sin multas): " + P(r.total));
+    if (V) {
+      L.push(""); L.push("VERIFICACIÓN ORIENTATIVA DEL CÓDIGO:");
+      var TX = { ok: "cumple", no: "NO CUMPLE", rev: "a revisar", sd: "falta un dato" };
+      V.items.forEach(function (x) { L.push("  " + x.nombre + ": " + TX[x.estado] + (x.tuObra ? " (" + x.tuObra + "; zona: " + x.exigido + ")" : "")); });
+      if (V.multa) L.push("  Puede corresponder una multa. La define el Juez de Faltas. " + marcoMulta(V.multa));
+    }
+    L.push(""); L.push("Estimación orientativa. No reemplaza el visado del Colegio ni la liquidación municipal.");
+    return L.join("\n");
+  }
+
+  /* ---------- Plano en PDF ---------- */
+  var PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+  function cargarScript(src) { return new Promise(function (ok, err) { var s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = function () { err(new Error("carga")); }; document.head.appendChild(s); }); }
+  function cargarPdfJs() {
+    if (window.pdfjsLib) return Promise.resolve();
+    return cargarScript(PDFJS + "pdf.worker.min.js").then(function () { return cargarScript(PDFJS + "pdf.min.js"); })
+      .then(function () { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + "pdf.worker.min.js"; });
+  }
+  function itemsDe(tc, vp) {
+    var out = [];
+    tc.items.forEach(function (it) {
+      if (!it.str || !it.str.trim()) return;
+      var t = window.pdfjsLib.Util.transform(vp.transform, it.transform);
+      if (Math.abs(Math.atan2(t[1], t[0])) > 0.2) return;            // textos girados respecto de la hoja: cotas verticales
+      out.push({ s: it.str, x: t[4], y: t[5], w: it.width || 0, h: it.height || Math.hypot(t[2], t[3]) || 8 });
+    });
+    return out;
+  }
+  function leerPdf(file) {
+    mensaje("msg-pdf", "Leyendo el plano…"); $("pdf-campos").hidden = true; $("pdf-canvas").hidden = true;
+    var lector = new FileReader();
+    lector.onerror = function () { mensaje("msg-pdf", "No se pudo abrir el archivo. Probá de nuevo."); };
+    lector.onload = function () {
+      cargarPdfJs().then(function () { return window.pdfjsLib.getDocument({ data: new Uint8Array(lector.result) }).promise; }).then(function (pdf) {
+        var n = Math.min(pdf.numPages, 12), hallazgos = [], cadena = Promise.resolve();
+        for (var i = 1; i <= n; i++) (function (i) {
+          cadena = cadena.then(function () { return pdf.getPage(i); }).then(function (pg) {
+            var v1 = pg.getViewport({ scale: 1 });
+            return pg.getTextContent().then(function (tc) {
+              hallazgos.push(analizarPlano(itemsDe(tc, v1), v1.width));
+              if (i !== 1) return;
+              var vp = pg.getViewport({ scale: Math.min(2, 1400 / v1.width) }), cv = $("pdf-canvas");
+              cv.width = vp.width; cv.height = vp.height; cv.hidden = false;
+              return pg.render({ canvasContext: cv.getContext("2d"), viewport: vp }).promise.catch(function () { cv.hidden = true; });
+            });
+          });
+        })(i);
+        return cadena.then(function () { mostrarPlano(unirHallazgos(hallazgos), pdf.numPages); });
+      }).catch(function (err) {
+        mensaje("msg-pdf", err && err.message === "carga" ? "No se pudo cargar el lector de PDF. Revisá la conexión y probá de nuevo, o cargá los datos a mano en Inicio." : "No se pudo leer ese archivo. Verificá que sea un PDF y que no tenga contraseña.");
+      });
+    };
+    lector.readAsArrayBuffer(file);
+  }
+  function unirHallazgos(hs) {           // varias láminas: se toma el primer dato encontrado de cada tipo
+    var a = { campos: {}, evidencia: [], notas: [], destino: "", partida: null, zona: "", nom: null, hay: false, texto: 0 };
+    hs.forEach(function (h) {
+      Object.keys(h.campos).forEach(function (k) { if (a.campos[k] == null) a.campos[k] = h.campos[k]; });
+      a.evidencia = a.evidencia.concat(h.evidencia); a.notas = a.notas.concat(h.notas);
+      a.destino = a.destino || h.destino; a.partida = a.partida || h.partida; a.zona = a.zona || h.zona; a.nom = a.nom || h.nom;
+      a.hay = a.hay || h.hay; a.texto += h.texto;
+    });
+    return a;
+  }
+  var CAMPOS_PDF = ["terreno", "declCub", "consCub", "consSemi", "exCub", "exSemi", "demoCub"];
+  var planoLeido = null;
+  function mostrarPlano(a, paginas) {
+    planoLeido = a;
+    if (a.texto < 20) { $("pdf-campos").hidden = true; return mensaje("msg-pdf", "Este PDF no tiene texto que se pueda leer: suele pasar con planos escaneados o exportados como dibujo. Mirá la vista previa y cargá los datos a mano en Inicio."); }
+    $("pdf-campos").hidden = false;
+    CAMPOS_PDF.forEach(function (k) { $("p-" + k).value = a.campos[k] != null ? a.campos[k] : ""; });
+    var decl = (a.campos.declCub || 0) + (a.campos.declSemi || 0); if (a.campos.declSemi) $("p-declCub").value = Math.round(decl * 100) / 100;
+    $("p-destino").value = a.destino || ""; $("p-partida").value = a.partida || "";
+    var hallados = CAMPOS_PDF.filter(function (k) { return a.campos[k] != null; }).length, extra = [];
+    if (a.destino) extra.push("el destino"); if (a.partida) extra.push("la partida"); if (a.zona) extra.push("la zona " + a.zona);
+    mensaje("msg-pdf", !a.hay ? "Se leyó el texto del plano, pero no se encontró una planilla de superficies reconocible. Completá los datos mirando la vista previa." :
+      "Se encontraron " + hallados + (hallados === 1 ? " superficie" : " superficies") + (extra.length ? ", " + extra.join(", ") : "") + ". Revisalos contra el plano antes de pasarlos." + (paginas > 12 ? " Se leyeron las primeras 12 páginas." : ""));
+    var ev = a.notas.map(function (t) { return "Nota: " + t; }).concat(a.evidencia.slice(0, 14).map(function (l) { return "· " + l.slice(0, 140); }));
+    if (a.nom) ev.push("· Nomenclatura: " + a.nom.map(function (v, i) { return v ? NOM[i] + " " + v : ""; }).filter(Boolean).join(" · "));
+    $("pdf-evid").innerHTML = ev.length ? "Leído del plano:<br>" + ev.map(esc).join("<br>") : "";
+    $("pdf-campos").classList.remove("llega"); void $("pdf-campos").offsetWidth; $("pdf-campos").classList.add("llega");
+  }
+  function usarPlano() {
+    var v = function (k) { return Number($("p-" + k).value) || 0; }, dest = $("p-destino").value.trim() || "casa", nuevas = [], a = planoLeido || {};
+    if (v("consCub") || v("consSemi")) nuevas.push(nuevaParte({ texto: dest, sit: "construir", cub: v("consCub"), semi: v("consSemi") }));
+    if (v("exCub") || v("exSemi")) nuevas.push(nuevaParte({ texto: dest, sit: "existente", cub: v("exCub"), semi: v("exSemi") }));
+    if (v("demoCub")) nuevas.push(nuevaParte({ texto: dest, sit: "demoler", cub: v("demoCub"), semi: 0 }));
+    if (!nuevas.length) return mensaje("msg-pdf", "Cargá al menos una superficie a construir, sin plano o a demoler para pasar los datos.");
+    partes = nuevas; $("declarada").value = v("declCub");
+    pintarPartes();
+    var pt = $("p-partida").value.replace(/^0?94\s*-\s*/, "").replace(/\D/g, "");
+    parcela = null;
+    if (D && pt) { $("partida").value = pt; buscarPartida(); }
+    if (D && !parcela && a.nom) { ["n-c", "n-s", "n-ch", "n-q", "n-f", "n-m", "n-p"].forEach(function (id, i) { $(id).value = a.nom[i] || ""; }); $("det-nomen").open = true; buscarNomen(); }
+    if (D && !parcela && a.zona) { var k = D.mapa[a.zona] || (D.fichas[a.zona.toUpperCase()] ? a.zona.toUpperCase() : ""); if (k) { $("zona").value = k; pintarFicha(); } }
+    if (v("terreno")) $("terreno").value = v("terreno");      // ante una diferencia con la base, vale el plano
+    recalcular(); irTab("inicio", true);
+  }
+
+  /* ---------- Verificación de valores ---------- */
+  function trasValores(antes) {
+    FC = CFG.colegio.UR / 20;
+    if (Number($("g-valorviaje").value) === antes.viaje) $("g-valorviaje").value = Math.round(CFG.colegio.medioDiaViajeFC * FC);
+    if (Number($("g-preciom2").value) === antes.m2) $("g-preciom2").value = CFG.ploteo.precioM2;
+    pintarFijos(); recalcular();
+  }
+  function fechaCorta(iso) { return /^\d{4}-\d{2}-\d{2}$/.test(iso || "") ? iso.split("-").reverse().join("/") : ""; }
+  function verificarValores(manual) {
+    var b = $("verificar"), caja = $("msg-valores"), antes = { viaje: Math.round(CFG.colegio.medioDiaViajeFC * FC), m2: CFG.ploteo.precioM2 };
+    if (manual) { b.disabled = true; b.textContent = "Verificando…"; }
+    var leido = null, cambios = [];
+    return fetch(CFG.enlaces.valores, { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error("valores"); return r.json(); })
+      .then(function (v) { leido = v; cambios = aplicarValores(CFG, v); trasValores(antes); }, function () { leido = null; })
+      .then(function () {
+        if (!manual) return null;
+        return fetch(CFG.enlaces.digestoDatos, { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error("digesto"); return r.json(); })
+          .then(function (j) { return { ok: true, nov: novedadesDigesto(j.posts, CFG, leido && leido.revisadoHasta) }; }, function () { return { ok: false, nov: [] }; });
+      }).then(function (dig) {
+        var avisos = ((leido && leido.avisos) || []).concat((leido && leido.avisosAuto) || []), L = [], alerta = false;
+        if (!manual) {
+          /* Al abrir no se muestra nada salvo que haya un aviso que el vecino deba conocer. */
+          if (!avisos.length) return;
+          avisos.forEach(function (a) { L.push("<b>Aviso:</b> " + esc(a)); });
+          caja.innerHTML = L.join("<br>"); caja.hidden = false; caja.dataset.alerta = "1"; return;
+        }
+        var ahora = new Date(), hora = ("0" + ahora.getHours()).slice(-2) + ":" + ("0" + ahora.getMinutes()).slice(-2);
+        var f = function (x) { return x == null ? "sin cargar" : x < 1 ? pct(x) : P(x); };
+        if (leido) L.push("<b>Verificado hoy a las " + hora + ".</b> El archivo de valores fue revisado el " + esc(CFG.actualizado) + "." + (cambios.length ? " Se actualizaron " + cambios.length + (cambios.length === 1 ? " valor:" : " valores:") : " No hubo cambios respecto de lo que ya estaba cargado."));
+        else L.push("No se pudo leer el archivo de valores. Se usan los valores incluidos en la página, revisados el " + esc(CFG.actualizado) + ".");
+        cambios.forEach(function (c) { L.push("· " + esc(c.nombre) + ": " + f(c.antes) + " → <b>" + f(c.ahora) + "</b>"); });
+        L.push("<b>Derecho de construcción</b> (" + esc(CFG.municipio.norma) + "): " + pct(CFG.municipio.aConstruir) + " obra a construir, " + pct(CFG.municipio.sinPermiso) + " obra sin permiso, mínimo " + P(CFG.municipio.minSinPermiso) + " por parcela." + (CFG.municipio.lectura ? " " + esc(CFG.municipio.lectura) : ""));
+        if (dig.ok && dig.nov.length) { alerta = true; L.push("<b>Atención:</b> el Digesto municipal registra normas posteriores a las cargadas. Los porcentajes y las tasas pueden haber cambiado: " + dig.nov.slice(0, 4).map(function (n) { return n.link ? '<a href="' + esc(n.link) + '">' + esc(n.titulo) + "</a>" : esc(n.titulo); }).join("; ") + "."); }
+        else if (dig.ok) L.push("Consultado recién el Digesto municipal: no registra una Ordenanza Impositiva ni un Código de Faltas posteriores a los cargados.");
+        else L.push("No se pudo consultar el Digesto municipal desde esta ubicación. Esa comprobación funciona en la versión publicada junto al Digesto.");
+        var cq = (leido && leido.consultas) || {}, col = cq.colegio;
+        L.push("<b>Unidad referencial del Colegio</b>: " + P(CFG.colegio.UR) + " por m², vigente desde " + esc(CFG.colegio.vigenciaUR) + ". " +
+          (col ? "Verificación automática del " + fechaCorta(col.fecha) + ": " + esc(col.detalle) : "La página no puede leer el sitio del Colegio: lo consulta la verificación automática semanal, que todavía no corrió."));
+        if (col && !col.ok) alerta = true;
+        if (cq.digesto && !cq.digesto.ok) { alerta = true; L.push("Verificación automática del " + fechaCorta(cq.digesto.fecha) + ": " + esc(cq.digesto.detalle)); }
+        L.push("Multas: se fijan en módulos municipales y las decide el Juez de Faltas. La planilla no las calcula." + (CFG.faltas.modulo ? " Valor del módulo: " + P(CFG.faltas.modulo) + "." : ""));
+        avisos.forEach(function (a) { alerta = true; L.push("<b>Aviso:</b> " + esc(a)); });
+        caja.innerHTML = L.join("<br>"); caja.hidden = false; caja.dataset.alerta = alerta ? "1" : "0";
+        caja.classList.remove("llega"); void caja.offsetWidth; caja.classList.add("llega");
+        b.disabled = false; b.textContent = "Verificar valores actualizados";
+      });
+  }
+
+  /* ---------- Pestañas y arranque ---------- */
+  function irTab(t, mover) {
+    if (!{ inicio: 1, plano: 1, detalle: 1 }[t]) t = "inicio";
+    tab = t;
+    ["inicio", "plano", "detalle"].forEach(function (k) { $("v-" + k).hidden = k !== t; $("tab-" + k).setAttribute("aria-selected", k === t ? "true" : "false"); });
+    try { if (location.hash !== "#" + t) history.replaceState(null, "", "#" + t); } catch (err) { /* sin historial */ }
+    pintarPanel();
+    if (mover) { try { document.querySelector(".tabs").scrollIntoView({ block: "start" }); } catch (err) { /* nada */ } }
+  }
+  function leerHash() {
+    var h = (location.hash || "").replace("#", ""), mp = h.match(/^p-?(\d+)$/);
+    if (mp && D) { $("partida").value = mp[1]; irTab("inicio"); buscarPartida(); }
+    else if ({ inicio: 1, plano: 1, detalle: 1 }[h]) irTab(h);
+  }
+  function pintarFijos() {
+    var C = CFG.colegio, M = CFG.municipio, Fa = CFG.faltas, primera = !pintarFijos.hecho; pintarFijos.hecho = true;
+    $("vigencia").innerHTML =
+      '<span class="dato">Unidad referencial <b>' + P(C.UR) + "/m²</b></span>" +
+      '<span class="dato">vigente desde <b>' + C.vigenciaUR + "</b></span>" +
+      '<span class="dato">tasas municipales de <b>' + M.valoresDe + "</b></span>" +
+      '<span class="dato">revisado el <b>' + CFG.actualizado + "</b></span>";
+    if (primera) {
+    $("lnk-cou").href = CFG.enlaces.cou;
+    $("g-valorviaje").value = Math.round(C.medioDiaViajeFC * FC);
+    $("g-preciom2").value = CFG.ploteo.precioM2; $("g-copias").value = CFG.ploteo.copias;
+    $("g-formato").innerHTML = Object.keys(CFG.ploteo.formatos).map(function (k) { return '<option value="' + k + '"' + (k === CFG.ploteo.formato ? " selected" : "") + ">" + k + " · " + dec.format(CFG.ploteo.formatos[k]) + " m²</option>"; }).join("");
+    $("items-viv").innerHTML = ITEMS_VIV.map(function (it) { return '<label class="chk"><input type="checkbox" id="iv-' + it[0] + '" data-viv="' + it[0] + '"><span>' + it[1] + "</span></label>"; }).join("");
+    var zs = '<option value="">Elegí la zona…</option>';
+    if (D) Object.keys(D.fichas).forEach(function (k) { zs += '<option value="' + esc(k) + '">' + esc(k) + " · " + esc(D.fichas[k].n) + "</option>"; });
+    $("zona").innerHTML = zs;
+    if (!D) mensaje("msg-parcela", "No se pudo cargar la base de parcelas y zonas. La estimación de costos funciona igual; la verificación del Código no está disponible.");
+    var dl = document.createElement("datalist"); dl.id = "sugerencias";
+    dl.innerHTML = ["casa", "ampliación de la casa", "quincho", "cochera", "pileta", "departamentos", "local comercial", "kiosco", "oficina", "consultorio", "galpón", "depósito", "tinglado", "taller", "fábrica", "criadero", "invernadero", "restaurante", "casa de comidas", "hostería", "cabañas", "salón de fiestas", "escuela", "club", "capilla"].map(function (s) { return '<option value="' + s + '">'; }).join("");
+    document.body.appendChild(dl);
+
+    }
+    var filasPD = "", desde = 0;
+    C.tablaPD.forEach(function (t) { filasPD += "<tr><td>" + (t[0] === Infinity ? "Más de " + P(desde) : "Hasta " + P(t[0] * FC)) + '</td><td class="n">' + pct(t[1]) + "</td></tr>"; desde = t[0] * FC; });
+    var filasM = "<tr><td>Hasta " + P(C.tablaMed.baseFC * FC) + '</td><td class="n">' + P(C.tablaMed.minimoFC * FC) + " fijo</td></tr>"; desde = C.tablaMed.baseFC * FC;
+    C.tablaMed.tramos.forEach(function (t) { filasM += "<tr><td>" + (t[0] === Infinity ? "Más de " + P(desde) : "Hasta " + P(t[0] * FC)) + '</td><td class="n">' + pct(t[1]) + "</td></tr>"; desde = t[0] * FC; });
+    $("metodo").innerHTML =
+      "<article><h3>1. El valor referencial de la obra</h3>" +
+      "<p>No es lo que vas a gastar en construir. Es una base de cálculo común al Colegio y al Municipio.</p>" +
+      '<div class="formula">superficie computable × ' + P(C.UR) + " × coeficiente del destino</div>" +
+      "<p>La superficie computable es la cubierta más la mitad de la semicubierta. El coeficiente sale de la tabla de categorías de obra del Colegio. La vivienda unifamiliar va de la categoría A (ningún ítem) a la E (cuatro o más) según ocho características; si la única que cumple es estar en una urbanización privada, pasa a la C.</p></article>" +
+
+      "<article><h3>2. Honorarios por obra a construir</h3>" +
+      "<p>Proyecto y dirección se calculan por tramos sobre el valor referencial: cada tramo aporta su porcentaje y se suman.</p>" +
+      '<div class="tabla"><table><thead><tr><th>Tramo del valor referencial</th><th class="n">Honorario</th></tr></thead><tbody>' + filasPD + "</tbody></table></div>" +
+      "<p>De ese total, el proyecto es el " + pct(C.proyecto) + " y la dirección el " + pct(C.direccion) + ". La dirección suma un " + pct(C.suplSeparados) + " por contratos separados o un " + pct(C.suplAdministracion) + " por administración. Mínimo para cualquier tarea: " + P(C.minTareaFC * FC) + ".</p></article>" +
+
+      "<article><h3>3. Honorarios por declarar lo existente</h3>" +
+      "<p>El empadronamiento suma dos tareas: la medición con confección de planos y el informe técnico.</p>" +
+      '<div class="tabla"><table><thead><tr><th>Tramo del valor referencial</th><th class="n">Medición</th></tr></thead><tbody>' + filasM + "</tbody></table></div>" +
+      "<p>Informe técnico con inspección: " + P(C.informeTecnicoFC * FC) + ". El conjunto no baja de " + P(C.minMedicionVivAFC * FC) + " en vivienda categoría A ni de " + P(C.minMedicionRestoFC * FC) + " en el resto. Demolición: " + pct(C.demolicion) + " del honorario de proyecto y dirección, sobre el valor depreciado según el estado.</p></article>" +
+
+      "<article><h3>4. Colegio y Caja de Previsión</h3><ul>" +
+      "<li><b>Tasa de visado (CEP):</b> " + pct(C.cepAlicuota) + " del honorario de referencia, con un mínimo de " + P(C.cepMinimoFC * FC) + ". El porcentaje surge de liquidaciones emitidas por el sistema del Colegio.</li>" +
+      "<li><b>Aporte a la CAAITBA:</b> " + pct(C.aporteCaja) + " del honorario (Ley 12.490, art. 26).</li>" +
+      "<li><b>Contribución del artículo 29:</b> al declarar una obra que se hizo sin control municipal ni intervención profesional registrada, el propietario paga a la Caja el " + pct(C.art29) + " del honorario de proyecto y dirección que hubiera correspondido.</li></ul>" +
+      "<p>La tasa de visado y el aporte son obligaciones del profesional calculadas sobre su honorario. Muchos presupuestos los detallan aparte; otros los incluyen. Preguntalo.</p></article>" +
+
+      "<article><h3>5. Municipalidad de San Andrés de Giles</h3>" +
+      "<p>" + M.norma + ". El derecho de construcción es una alícuota sobre el mismo valor referencial, sin descuento por el estado de la obra.</p>" +
+      '<div class="tabla"><table><thead><tr><th>Concepto</th><th class="n">Valor</th></tr></thead><tbody>' +
+      '<tr><td>Obra a construir (art. 15)</td><td class="n">' + pct(M.aConstruir) + "</td></tr>" +
+      '<tr><td>Vivienda multifamiliar a construir</td><td class="n">' + pct(M.aConstruirMulti) + "</td></tr>" +
+      '<tr><td>Obra hecha sin permiso (art. 16)</td><td class="n">' + pct(M.sinPermiso) + "</td></tr>" +
+      '<tr><td>Multifamiliar hecha sin permiso</td><td class="n">' + pct(M.sinPermisoMulti) + "</td></tr>" +
+      '<tr><td>Mínimo por parcela, obra sin permiso</td><td class="n">' + P(M.minSinPermiso) + "</td></tr>" +
+      '<tr><td>Más de 70 años acreditados (art. 17)</td><td class="n">' + pct(M.antiguedad70) + "</td></tr>" +
+      '<tr><td>Demolición con / sin permiso (art. 19)</td><td class="n">' + pct(M.demolicionCon) + " / " + pct(M.demolicionSin) + "</td></tr>" +
+      M.oficina.map(function (o) { return "<tr><td>" + o.nombre + ' (art. 14)</td><td class="n">' + P(o.valor) + "</td></tr>"; }).join("") +
+      "</tbody></table></div>" +
+      "<p>Los importes fijos son de " + M.valoresDe + " y la ordenanza prevé un ajuste trimestral por inflación (art. 68): pueden estar desactualizados. No se incluyen regímenes especiales, como cría intensiva de animales (0,5 %) o construcciones en el cementerio.</p></article>" +
+
+      "<article><h3>6. Verificación del Código y multas</h3>" +
+      "<p>La planilla compara lo que cargaste con el FOS, el FOT, la altura y los retiros de la ficha de zona. Para el FOT cuenta la superficie cubierta más la mitad de la semicubierta. El uso de cada parte sale del buscador de actividades de la Consulta Urbanística Giles y se contrasta con los usos admitidos en la zona. Es una ayuda para anticipar problemas, no un dictamen.</p><ul>" +
+      "<li>Construir sin permiso se sanciona con el recargo de la Ordenanza Impositiva (art. 88 del Código de Faltas): ya está en la alícuota del " + pct(M.sinPermiso) + ".</li>" +
+      "<li>Una obra antirreglamentaria tiene multa de " + modulos(Fa.antirreglamentaria) + " (art. 89), más la obligación de adecuarla o demolerla.</li>" +
+      "<li>La planilla avisa cuándo puede corresponder una multa, pero no la estima.</li></ul>" +
+      "<p>El módulo es la unidad municipal de las multas: el 2 % del sueldo básico inicial de la categoría II (art. 9)" + (Fa.modulo ? ", hoy " + P(Fa.modulo) : "") + ". Cuántos módulos corresponden en cada caso lo decide el Juez de Faltas; por eso la planilla no calcula multas.</p></article>" +
+
+      "<article><h3>7. Gastos del trámite</h3><ul>" +
+      "<li><b>Copias:</b> metros cuadrados de plano por precio. Una lámina A0 mide 1 m², la A1 0,5 m², la A2 0,25 m². Base de " + CFG.ploteo.copias + " copias de cada lámina.</li>" +
+      "<li><b>Viáticos:</b> el arancel fija el medio día de viaje en " + P(C.medioDiaViajeFC * FC) + " y el día completo en " + P(FC) + ".</li>" +
+      "<li><b>Sellados y estampillas:</b> cargá los que te informen en Mesa de Entradas.</li></ul></article>";
+
+    $("pie-cou").innerHTML = "Zonas, indicadores y parcelas: " + (D ? esc(D.fuente) + ", base del " + esc(D.fecha.split("-").reverse().join("/")) + ". " : "") + 'Mapa y fichas completas en <a href="' + CFG.enlaces.cou + '">Consulta Urbanística Giles</a>.';
+    $("pie-fuentes").innerHTML = 'Fuentes: <a href="' + CFG.enlaces.tablas + '">tabla de valores referenciales del Colegio (Res. 8/26)</a>, <a href="' + CFG.enlaces.colegio + '">visado, CEP y aportes</a>, <a href="' + CFG.enlaces.ley12490 + '">Ley 12.490</a>, Decreto 6964/65, <a href="' + CFG.enlaces.impositiva + '">' + M.norma + '</a>, <a href="' + CFG.enlaces.faltas + '">Código de Faltas (Ord. 2617/23)</a> y <a href="' + CFG.enlaces.digesto + '">Digesto municipal</a>.';
+    $("pie-autor").textContent = CFG.autor;
+  }
+
+  // Eventos
+  $("partes").addEventListener("input", function (ev) {
+    var el = ev.target, k = el.dataset.k; if (!k) return;
+    var p = partes.filter(function (x) { return x.id === Number(el.closest(".parte").dataset.id); })[0]; if (!p) return;
+    if (k === "texto") { p.texto = el.value; p.opcion = null; p.manual = null; p.verLista = false; p.uso = null; }
+    else if (k === "uso") p.uso = el.value || null;
+    else if (k === "sit") { p.sit = el.value; el.closest(".parte").dataset.sit = p.sit; }
+    else if (k === "opcion") p.opcion = el.value === "" ? null : Number(el.value);
+    else if (k === "manual") { p.manual = el.value || null; p.verLista = false; }
+    else p[k] = el.value === "" ? 0 : Number(el.value);
+    recalcular();
+  });
+  $("partes").addEventListener("click", function (ev) {
+    var t = ev.target, cont = t.closest(".parte"); if (!cont) return;
+    var id = Number(cont.dataset.id), p = partes.filter(function (x) { return x.id === id; })[0];
+    if (t.matches("[data-quitar]")) { partes = partes.filter(function (x) { return x.id !== id; }); pintarPartes(); recalcular(); }
+    else if (t.matches("[data-lista]")) { p.verLista = true; recalcular(); }
+    else if (t.matches("[data-auto]")) { p.manual = null; recalcular(); }
+  });
+  $("agregar").addEventListener("click", function () {
+    partes.push(nuevaParte({ sit: (partes[partes.length - 1] || {}).sit }));
+    pintarPartes(); recalcular();
+    var c = $("x" + partes[partes.length - 1].id); if (c) c.focus();
+  });
+  document.querySelectorAll("[data-ej]").forEach(function (b) { b.addEventListener("click", function () { cargarEjemplo(b.dataset.ej); }); });
+  $("form").addEventListener("input", function (ev) {
+    var t = ev.target; if (t.closest("#partes") || t.closest("#pdf-campos") || t.id === "pdf" || t.id === "partida" || /^n-/.test(t.id)) return;
+    if (t.dataset.viv) viv[t.dataset.viv] = t.checked;
+    if (t.id === "zona") { if (parcela && (D.mapa[D.zonas[parcela[8]]] || "") !== t.value) parcela = null; pintarFicha(); }
+    recalcular();
+  });
+  $("form").addEventListener("submit", function (ev) { ev.preventDefault(); });
+  $("buscar-partida").addEventListener("click", buscarPartida);
+  $("partida").addEventListener("keydown", function (ev) { if (ev.key === "Enter") { ev.preventDefault(); buscarPartida(); } });
+  $("buscar-nomen").addEventListener("click", buscarNomen);
+  $("res-parcela").addEventListener("click", function (ev) { var b = ev.target.closest("button"); if (b) elegir($("res-parcela")._rows[Number(b.dataset.i)]); });
+  document.querySelectorAll(".tab").forEach(function (b) { b.addEventListener("click", function () { irTab(b.dataset.tab); }); });
+  $("liquidacion").addEventListener("click", function (ev) { var b = ev.target.closest("[data-ir]"); if (b) irTab(b.dataset.ir, true); });
+  $("barra-ver").addEventListener("click", function (ev) { ev.preventDefault(); $("liquidacion").scrollIntoView({ block: "start" }); });
+  $("pdf").addEventListener("change", function () { if (this.files && this.files[0]) leerPdf(this.files[0]); });
+  var zona = $("soltar");
+  ["dragenter", "dragover"].forEach(function (n) { zona.addEventListener(n, function (ev) { ev.preventDefault(); zona.classList.add("sobre"); }); });
+  ["dragleave", "drop"].forEach(function (n) { zona.addEventListener(n, function (ev) { ev.preventDefault(); zona.classList.remove("sobre"); }); });
+  zona.addEventListener("drop", function (ev) { var f = ev.dataTransfer && ev.dataTransfer.files[0]; if (f) leerPdf(f); });
+  $("pdf-usar").addEventListener("click", usarPlano);
+  $("copiar").addEventListener("click", function () {
+    var t = resumenTexto(), b = $("copiar"); if (!t) return;
+    var ok = function () { b.textContent = "Resumen copiado"; setTimeout(function () { b.textContent = "Copiar resumen"; }, 2000); };
+    try { navigator.clipboard.writeText(t).then(ok, function () { b.textContent = "No se pudo copiar"; }); }
+    catch (err) { b.textContent = "No se pudo copiar"; }
+  });
+  var enMarco = false; try { enMarco = window.self !== window.top; } catch (err) { enMarco = true; }
+  if (!enMarco) { $("imprimir").hidden = false; $("imprimir").addEventListener("click", function () { window.print(); }); }
+  window.addEventListener("hashchange", leerHash);
+  $("verificar").addEventListener("click", function () { verificarValores(true); });
+
+  pintarFijos();
+  cargarEjemplo("nueva");
+  leerHash();
+  if (window.fetch) verificarValores(false);
+})();
+
+</script>
+</body>
+</html>

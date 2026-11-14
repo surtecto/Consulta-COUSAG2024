@@ -1,0 +1,50 @@
+name: Estimador · verificar valores y datos
+
+# Corre todos los lunes, cada vez que cambia la Consulta (zonas, usos, parcelas) o el Estimador,
+# y también a mano desde la pestaña Actions («Run workflow»).
+on:
+  schedule:
+    - cron: '43 10 * * 1'   # lunes 07:43 hora de Buenos Aires
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'parcelas.js'
+      - 'estimador/src/**'
+      - 'estimador/herramientas/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: estimador
+  cancel-in-progress: false
+
+jobs:
+  actualizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Tomar parcelas, zonas y usos de la Consulta
+        run: node estimador/herramientas/generar_datos.js . "$(TZ=America/Argentina/Buenos_Aires date +%F)"
+      - name: Rearmar la página
+        run: node estimador/herramientas/armar.js
+      - name: Verificar la Ordenanza Impositiva en el Digesto y la Unidad Referencial del Colegio
+        run: node estimador/herramientas/actualizar_valores.js
+      - name: Publicar si hubo cambios
+        run: |
+          git config user.name  "Estimador Giles (automático)"
+          git config user.email "actions@users.noreply.github.com"
+          git add estimador/datos/cou.js estimador/datos/valores.json estimador/index.html
+          if git diff --cached --quiet; then
+            echo "Sin cambios."
+          else
+            git commit -m "Estimador: verificación automática $(date -u +%Y-%m-%d)"
+            git pull --rebase origin main
+            git push
+          fi

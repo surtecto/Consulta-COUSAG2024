@@ -1,0 +1,230 @@
+<div class="pagina">
+
+  <header class="hero">
+    <img class="hero-foto" src="img/giles.jpg" alt="Vista aérea de San Andrés de Giles al atardecer: la plaza, la cuadrícula del casco urbano y el campo hasta el horizonte" width="1800" height="769">
+    <div class="hero-texto">
+      <p class="sobre">San Andrés de Giles · Obras particulares</p>
+      <h1>¿Cuánto cuesta presentar el expediente de tu obra?</h1>
+      <p class="bajada">Empezá por tu parcela, contá con tus palabras qué vas a construir o declarar y revisá si cumple con el Código de Ordenamiento Urbano. La planilla estima honorarios mínimos, pagos al Colegio y a la Caja, derechos municipales y gastos del trámite.</p>
+      <div class="vigencia" id="vigencia"></div>
+      <div class="verifica"><button type="button" class="btn" id="verificar">Verificar valores actualizados</button></div>
+    </div>
+  </header>
+  <p class="estado-valores" id="msg-valores" role="status" hidden></p>
+
+  <nav class="tabs" role="tablist" aria-label="Secciones">
+    <button type="button" class="tab" role="tab" id="tab-inicio" data-tab="inicio" aria-controls="v-inicio" aria-selected="true">Inicio</button>
+    <button type="button" class="tab" role="tab" id="tab-plano" data-tab="plano" aria-controls="v-plano" aria-selected="false">Leer un plano en PDF</button>
+    <button type="button" class="tab" role="tab" id="tab-detalle" data-tab="detalle" aria-controls="v-detalle" aria-selected="false">Cálculo detallado</button>
+  </nav>
+
+  <div class="cuerpo">
+    <form class="form" id="form" novalidate>
+
+      <!-- ================= INICIO ================= -->
+      <div class="vista" id="v-inicio" role="tabpanel" aria-labelledby="tab-inicio">
+
+        <section class="bloque" aria-labelledby="h-parcela">
+          <h2 id="h-parcela"><span class="paso">1</span>Tu parcela</h2>
+          <p class="ayuda">Con la partida, la planilla toma la zona, la superficie del terreno y los indicadores del Código. Si no la sabés, ubicá tu parcela en el mapa de <a id="lnk-cou" href="#">Consulta Urbanística Giles</a> y copiá el número.</p>
+          <div class="buscar">
+            <div class="campo"><label for="partida">Partida municipal</label><input type="text" id="partida" inputmode="numeric" autocomplete="off" placeholder="Por ejemplo, 6510"></div>
+            <button type="button" class="btn chico" id="buscar-partida">Buscar</button>
+          </div>
+          <details class="mas" id="det-nomen">
+            <summary>Buscar por nomenclatura catastral</summary>
+            <div class="nomen">
+              <div class="campo"><label for="n-c">Circ.</label><input type="text" id="n-c" autocomplete="off"></div>
+              <div class="campo"><label for="n-s">Secc.</label><input type="text" id="n-s" autocomplete="off"></div>
+              <div class="campo"><label for="n-ch">Chacra</label><input type="text" id="n-ch" autocomplete="off"></div>
+              <div class="campo"><label for="n-q">Quinta</label><input type="text" id="n-q" autocomplete="off"></div>
+              <div class="campo"><label for="n-f">Fracc.</label><input type="text" id="n-f" autocomplete="off"></div>
+              <div class="campo"><label for="n-m">Manz.</label><input type="text" id="n-m" autocomplete="off"></div>
+              <div class="campo"><label for="n-p">Parc.</label><input type="text" id="n-p" autocomplete="off"></div>
+            </div>
+            <button type="button" class="btn sec chico" id="buscar-nomen" style="margin-top:10px">Buscar por nomenclatura</button>
+          </details>
+          <p class="msg" id="msg-parcela" hidden></p>
+          <div class="resultados" id="res-parcela"></div>
+          <div id="ficha-parcela"></div>
+          <div class="fila">
+            <div class="campo"><label for="zona">Zona del Código</label><select id="zona"></select></div>
+            <div class="campo"><label for="terreno">Superficie del terreno (m²)</label><input type="number" id="terreno" min="0" step="0.1" inputmode="decimal"></div>
+          </div>
+          <p class="ayuda">Si no encontrás la parcela, elegí la zona y cargá la superficie a mano. Los datos salen de la base de la Consulta Urbanística; ante una diferencia, vale el plano de mensura.</p>
+        </section>
+
+        <section class="bloque" aria-labelledby="h-partes">
+          <h2 id="h-partes"><span class="paso">2</span>Tu obra</h2>
+          <p class="ayuda">Cargá una parte por cada cosa distinta: la casa, el quincho, el local, la pileta. Escribí qué es con tus palabras y la planilla busca el encuadre del Colegio. La superficie semicubierta (galerías, aleros, cocheras abiertas) se computa al 50 %.</p>
+          <div class="ejemplos"><span>Probá con un ejemplo:</span>
+            <button type="button" class="chip" data-ej="nueva">Casa nueva de 90 m²</button>
+            <button type="button" class="chip" data-ej="declarar">Declarar una casa de 75 m²</button>
+            <button type="button" class="chip" data-ej="mixto">Ampliar y declarar</button>
+            <button type="button" class="chip" data-ej="local">Local de 60 m²</button>
+          </div>
+          <div class="partes" id="partes"></div>
+          <button type="button" class="agregar" id="agregar">+ Agregar otra parte</button>
+          <ul class="leyenda" aria-label="Referencias de color, como en el plano municipal">
+            <li><i class="m construir"></i>A construir</li>
+            <li><i class="m existente"></i>Existente sin plano</li>
+            <li><i class="m demoler"></i>A demoler</li>
+            <li><i class="m aprobado"></i>Existente con plano aprobado</li>
+          </ul>
+          <div class="fila">
+            <div class="campo">
+              <label for="declarada">Superficie cubierta ya declarada, con plano aprobado (m²)</label>
+              <input type="number" id="declarada" min="0" step="1" inputmode="decimal" value="0">
+            </div>
+          </div>
+          <p class="ayuda" id="txt-declarada"></p>
+          <div id="b-vivienda" hidden>
+            <h3>Características de la vivienda</h3>
+            <p class="ayuda">El Colegio ordena las viviendas de la categoría A a la E según cuántas de estas características tienen. Marcá las que correspondan a la casa completa.</p>
+            <div class="items" id="items-viv"></div>
+            <p class="ayuda" id="txt-categoria"></p>
+          </div>
+        </section>
+
+        <section class="bloque" id="b-cou" aria-labelledby="h-cou">
+          <h2 id="h-cou"><span class="paso">3</span>¿Cumple con el Código?</h2>
+          <p class="ayuda">Cuatro datos simples alcanzan para comparar tu obra con los indicadores de la zona. Contá todo lo que hay en la parcela: lo declarado, lo que está sin plano y lo que vas a construir.</p>
+          <div class="fila">
+            <div class="campo"><label for="v-plantas">¿Cuántas plantas tiene?</label>
+              <select id="v-plantas"><option value="1">Solo planta baja</option><option value="2">Planta baja y un piso</option><option value="3">Planta baja y dos pisos</option><option value="4">Más de tres plantas</option></select></div>
+            <div class="campo"><label for="v-huella">Superficie que ocupa en planta baja (m²)</label><input type="number" id="v-huella" min="0" step="0.5" inputmode="decimal"></div>
+          </div>
+          <div class="fila">
+            <div class="campo"><label for="v-frente">Distancia del frente a la línea municipal (m)</label><input type="number" id="v-frente" min="0" step="0.1" inputmode="decimal"></div>
+            <div class="campo"><label for="v-fondo">Distancia al fondo del terreno (m)</label><input type="number" id="v-fondo" min="0" step="0.1" inputmode="decimal"></div>
+            <div class="campo"><label for="v-lateral">Menor distancia a un costado (m)</label><input type="number" id="v-lateral" min="0" step="0.1" inputmode="decimal"></div>
+          </div>
+          <p class="ayuda" id="txt-huella"></p>
+          <ul class="verif" id="lista-verif"></ul>
+          <p class="ayuda">Esta comparación es orientativa: usa lo que cargaste y puede interpretarse distinto al medir en el lugar. La verificación válida la hace la Dirección de Planeamiento y Obras Particulares sobre el plano.</p>
+        </section>
+      </div>
+
+      <!-- ================= PLANO ================= -->
+      <div class="vista" id="v-plano" role="tabpanel" aria-labelledby="tab-plano" hidden>
+        <section class="bloque" aria-labelledby="h-plano">
+          <h2 id="h-plano">Leer un plano en PDF</h2>
+          <p class="ayuda">Si ya tenés el plano, subilo: la planilla busca en la carátula el balance de superficies, el destino y la partida, y te propone los datos. El archivo se lee en tu navegador y no se envía a ningún lado.</p>
+          <div class="soltar" id="soltar">
+            <label for="pdf"><b>Elegí el PDF</b> o arrastralo acá</label>
+            <input type="file" id="pdf" accept="application/pdf,.pdf">
+          </div>
+          <p class="msg" id="msg-pdf" hidden></p>
+          <div id="pdf-campos" hidden>
+            <h3>Datos encontrados en el plano</h3>
+            <p class="ayuda">Revisalos contra el plano y corregí lo que haga falta antes de pasarlos. La lectura es automática y puede equivocarse, sobre todo si el balance está en varias planillas.</p>
+            <div class="fila">
+              <div class="campo"><label for="p-destino">Destino</label><input type="text" id="p-destino"></div>
+              <div class="campo"><label for="p-partida">Partida</label><input type="text" id="p-partida" inputmode="numeric"></div>
+              <div class="campo"><label for="p-terreno">Superficie del terreno (m²)</label><input type="number" id="p-terreno" min="0" step="0.01"></div>
+            </div>
+            <div class="fila">
+              <div class="campo"><label for="p-declCub">Existente con plano aprobado (m²)</label><input type="number" id="p-declCub" min="0" step="0.01"></div>
+              <div class="campo"><label for="p-consCub">A construir, cubierta (m²)</label><input type="number" id="p-consCub" min="0" step="0.01"></div>
+              <div class="campo"><label for="p-consSemi">A construir, semicubierta (m²)</label><input type="number" id="p-consSemi" min="0" step="0.01"></div>
+            </div>
+            <div class="fila">
+              <div class="campo"><label for="p-exCub">Sin plano, cubierta (m²)</label><input type="number" id="p-exCub" min="0" step="0.01"></div>
+              <div class="campo"><label for="p-exSemi">Sin plano, semicubierta (m²)</label><input type="number" id="p-exSemi" min="0" step="0.01"></div>
+              <div class="campo"><label for="p-demoCub">A demoler (m²)</label><input type="number" id="p-demoCub" min="0" step="0.01"></div>
+            </div>
+            <div class="evid" id="pdf-evid"></div>
+            <div class="acciones" style="margin-top:12px"><button type="button" class="btn" id="pdf-usar">Pasar estos datos al Inicio</button></div>
+          </div>
+          <canvas class="vistaprevia" id="pdf-canvas" hidden></canvas>
+        </section>
+      </div>
+
+      <!-- ================= DETALLE ================= -->
+      <div class="vista" id="v-detalle" role="tabpanel" aria-labelledby="tab-detalle" hidden>
+        <section class="bloque" id="b-construir" aria-labelledby="h-construir">
+          <h2 id="h-construir">Lo que vas a construir</h2>
+          <fieldset class="opciones">
+            <legend class="rotulo">¿Qué le encargás al profesional?</legend>
+            <label class="op"><input type="checkbox" id="t-proyecto" checked><span>Proyecto<small>Anteproyecto, planos y documentación. Es el 60 % del honorario de proyecto y dirección.</small></span></label>
+            <label class="op"><input type="checkbox" id="t-direccion" checked><span>Dirección de obra<small>Control de que la obra se ejecute según el proyecto. Es el 40 % restante.</small></span></label>
+          </fieldset>
+          <fieldset class="opciones" id="f-modalidad">
+            <legend class="rotulo">¿Cómo se va a construir?</legend>
+            <label class="op"><input type="radio" name="modalidad" id="m-unica" value="unica"><span>Con una sola empresa constructora<small>La empresa asume toda la ejecución. Sin suplemento de dirección.</small></span></label>
+            <label class="op"><input type="radio" name="modalidad" id="m-separados" value="separados" checked><span>Contratando cada gremio por separado<small>Albañil, electricista, plomero por su cuenta. La dirección lleva un suplemento del 100 %.</small></span></label>
+            <label class="op"><input type="radio" name="modalidad" id="m-administracion" value="administracion"><span>Por administración<small>El profesional además compra, contrata y administra la obra. Suplemento del 200 %.</small></span></label>
+          </fieldset>
+          <label class="chk"><input type="checkbox" id="linea"><span>Voy a pedir el otorgamiento de línea municipal. Se pide cuando el frente de la parcela no está materializado; consultalo en Planeamiento.</span></label>
+        </section>
+
+        <section class="bloque" id="b-existente" aria-labelledby="h-existente">
+          <h2 id="h-existente">Lo que ya está construido sin plano</h2>
+          <p class="ayuda">Declarar una obra existente (empadronarla) requiere medición, planos e informe técnico de un profesional. Como la obra nunca se presentó, corresponde además la contribución del artículo 29 de la Ley 12.490 a la Caja de Previsión, a cargo del propietario, aunque en su momento haya trabajado un profesional.</p>
+          <label class="chk"><input type="checkbox" id="antig70"><span>La construcción tiene más de 70 años y puedo acreditarlo. El derecho de construcción baja a la alícuota reducida.</span></label>
+        </section>
+
+        <section class="bloque" id="b-demoler" aria-labelledby="h-demoler">
+          <h2 id="h-demoler">Lo que vas a demoler</h2>
+          <div class="fila">
+            <div class="campo"><label for="estado">Estado de la construcción</label>
+              <select id="estado"><option value="bueno">Bueno</option><option value="regular" selected>Regular</option><option value="malo">Malo o peligroso</option></select></div>
+            <div class="campo"><label for="demopermiso">Permiso de demolición</label>
+              <select id="demopermiso"><option value="con" selected>Lo pido antes de demoler</option><option value="sin">Ya se demolió sin permiso</option></select></div>
+          </div>
+        </section>
+
+        <section class="bloque" aria-labelledby="h-gastos">
+          <h2 id="h-gastos">Gastos del trámite</h2>
+          <p class="ayuda">Los viáticos y las copias no forman parte del honorario: son gastos a cargo de quien encarga el trabajo.</p>
+          <h3>Copias de planos</h3>
+          <div class="fila">
+            <div class="campo"><label for="g-formato">Tamaño de lámina (DIN)</label><select id="g-formato"></select></div>
+            <div class="campo"><label for="g-laminas">Láminas del plano</label><input type="number" id="g-laminas" min="0" step="1" inputmode="numeric" value="2"></div>
+            <div class="campo"><label for="g-copias">Copias de cada lámina</label><input type="number" id="g-copias" min="0" step="1" inputmode="numeric"></div>
+            <div class="campo"><label for="g-preciom2">Precio por m² de plano ($)</label><input type="number" id="g-preciom2" min="0" step="100" inputmode="numeric"></div>
+          </div>
+          <p class="ayuda" id="txt-copias"></p>
+          <h3>Viáticos y sellados</h3>
+          <div class="fila">
+            <div class="campo"><label for="g-viajes">Viajes del profesional a la obra</label><input type="number" id="g-viajes" min="0" step="1" inputmode="numeric" value="0"></div>
+            <div class="campo"><label for="g-valorviaje">Valor por viaje ($)</label><input type="number" id="g-valorviaje" min="0" step="50" inputmode="numeric"></div>
+            <div class="campo"><label for="g-otros">Sellados, estampillas y otros ($)</label><input type="number" id="g-otros" min="0" step="100" inputmode="numeric" value="0"></div>
+          </div>
+          <p class="ayuda" id="txt-gastos"></p>
+          <label class="chk"><input type="checkbox" id="incluidos"><span>Mi profesional ya incluye la tasa de visado y el aporte a la Caja dentro de su honorario. No los sumes aparte.</span></label>
+        </section>
+
+        <h2 class="sec" id="como">Cómo se calcula</h2>
+        <div class="metodo" id="metodo"></div>
+      </div>
+    </form>
+
+    <aside class="liq" id="liquidacion" aria-live="polite">
+      <h2>Estimación del expediente</h2>
+      <div class="total">
+        <span class="rot">Total estimado <span class="aprox" title="Valor aproximado">≈</span></span>
+        <span class="num" id="o-total">$ 0</span>
+        <span class="sub" id="o-sub"></span>
+      </div>
+      <div class="compo" id="o-compo" role="img" aria-label="Reparto del costo entre honorarios, Colegio y Caja, Municipalidad y gastos"><span class="c1"></span><span class="c2"></span><span class="c3"></span><span class="c4"></span></div>
+      <div id="o-grupos"></div>
+      <div id="o-cou"></div>
+      <p class="supuestos" id="o-supuestos"></p>
+      <div class="grupo" id="o-fuera"></div>
+      <div class="acciones">
+        <button type="button" class="btn" id="copiar">Copiar resumen</button>
+        <button type="button" class="btn sec" id="imprimir" hidden>Imprimir o guardar PDF</button>
+      </div>
+      <p class="nota">Es una estimación orientativa, no una liquidación. Los importes definitivos surgen del visado del Colegio y de la liquidación de la Dirección de Planeamiento y Obras Particulares. Los renglones con <b>≈</b> llevan una aclaración sobre su precisión.</p>
+    </aside>
+  </div>
+
+  <footer>
+    <p id="pie-cou"></p>
+    <p id="pie-fuentes"></p>
+    <p id="pie-autor"></p>
+  </footer>
+</div>
+
+<div class="barra" aria-hidden="true"><div><span>Total estimado ≈</span><br><b id="o-barra">$ 0</b></div><a href="#liquidacion" id="barra-ver">Ver detalle</a></div>

@@ -1,0 +1,45 @@
+{
+  "_nota": "Valores vigentes del Estimador. La web lee este archivo al abrir y cuando se toca «Verificar valores actualizados». Una verificación automática semanal (GitHub Actions) consulta el Digesto y el sitio del Colegio y lo actualiza; también se puede editar a mano. Ver LEEME.md.",
+  "verificado": "2026-11-14",
+  "colegio": {
+    "UR": 1518000,
+    "vigenciaUR": "01/04/2026",
+    "fuente": "Res. CAUBA 8/26; sigue vigente en la actualización de octubre de 2026",
+    "url": "https://caubauno.org/visado/",
+    "paginas": [
+      "https://caubauno.org/visado/",
+      "https://caubauno.org/"
+    ]
+  },
+  "municipio": {
+    "norma": "Ordenanza Impositiva N.º 2787/26",
+    "numero": 2787,
+    "anio": 2026,
+    "valoresDe": "enero de 2026",
+    "aConstruir": 0.01,
+    "aConstruirMulti": 0.015,
+    "sinPermiso": 0.025,
+    "sinPermisoMulti": 0.03,
+    "minSinPermiso": 120000,
+    "antiguedad70": 0.0075,
+    "demolicionCon": 0.0025,
+    "demolicionSin": 0.0075,
+    "oficina": {
+      "inicio": 10000,
+      "final": 30000,
+      "linea": 30000
+    },
+    "ploteoA1": 4200,
+    "url": "https://hcdsanandresdegiles.com.ar/2026-ord2787-ordenanza-impositiva/"
+  },
+  "faltas": {
+    "norma": "Código de Faltas, Ordenanza N.º 2617/23",
+    "modulo": null,
+    "moduloNota": "Las multas se fijan en módulos municipales (art. 9 del Código de Faltas) y las decide el Juez de Faltas. La planilla no las calcula. El valor en pesos es opcional.",
+    "url": "https://hcdsanandresdegiles.com.ar/2023-ord02617-codigo-de-faltas/"
+  },
+  "avisos": [],
+  "revisadoHasta": {},
+  "consultas": {},
+  "avisosAuto": []
+}
