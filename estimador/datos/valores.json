@@ -40,6 +40,17 @@
   },
   "avisos": [],
   "revisadoHasta": {},
-  "consultas": {},
+  "consultas": {
+    "digesto": {
+      "fecha": "2026-11-14",
+      "ok": true,
+      "detalle": "El Digesto no registra una Ordenanza Impositiva ni un Código de Faltas posteriores a los cargados."
+    },
+    "colegio": {
+      "fecha": "2026-11-14",
+      "ok": true,
+      "detalle": "El sitio del Colegio sigue publicando $ 1.518.000 por m²."
+    }
+  },
   "avisosAuto": []
 }
