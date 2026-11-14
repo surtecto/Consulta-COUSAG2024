@@ -7,6 +7,18 @@ indicadores y los usos.
 
 Se publica en `https://surtecto.github.io/Consulta-COUSAG2024/estimador/`.
 
+## Ida y vuelta con la Consulta
+
+En el paso «Tu parcela», el botón **Elegir en el plano** abre la Consulta en modo de selección
+(`…/Consulta-COUSAG2024/?estimador=1`). Ahí la parcela se busca por partida, por nomenclatura o tocándola
+en el plano, y una barra al pie ofrece **Usar esta parcela y volver al Estimador**: vuelve con la partida,
+la nomenclatura, la zona y la superficie, y el Estimador conserva lo que ya estaba cargado.
+
+Esa barra sólo aparece cuando la Consulta se abre desde el Estimador; la Consulta normal no cambia.
+La hace `estimador/puente.js`, que la Consulta carga con una sola línea al final de su `index.html`:
+`<script src="estimador/puente.js"></script>`. Si se sube un `index.html` nuevo sin esa línea, la acción
+automática la vuelve a agregar.
+
 ## Qué se actualiza solo
 
 La acción **Estimador · verificar valores y datos** (pestaña Actions del repositorio) corre todos los
@@ -49,4 +61,5 @@ Se edita desde GitHub (lápiz → «Commit changes»). La web toma el cambio en 
 - `src/motor.js`: cálculo, tablas y lecturas (sin interfaz). `src/ui.js`: interfaz.
 - `datos/cou.js`: base tomada de la Consulta (`node herramientas/generar_datos.js <carpeta de la Consulta>`).
 - `herramientas/actualizar_valores.js`: la verificación automática.
-- Desde la Consulta se puede enlazar una parcela ya cargada: `estimador/#p-6510` (número de partida).
+- `puente.js`: la barra de selección que aparece en la Consulta cuando se llega desde el Estimador.
+- También se puede enlazar una parcela ya cargada: `estimador/#p-6510` (número de partida).

@@ -25,7 +25,7 @@
   /* ---------- Parcela ---------- */
   function nomTexto(r) { var o = []; for (var i = 0; i < 7; i++) if (r[1 + i]) o.push(NOM[i] + " " + r[1 + i]); return o.join(" · ") || "Sin nomenclatura en la base"; }
   function partidaTexto(p) { return p ? "094-" + ("000000" + p).slice(-6) : "sin partida"; }
-  function mensaje(id, t) { var el = $(id); el.textContent = t || ""; el.hidden = !t; }
+  function mensaje(id, t) { var el = $(id); el.textContent = t || ""; el.hidden = !t; el.classList.remove("traida"); }
   function listar(rows) {
     $("res-parcela").innerHTML = rows.length > 1 ? rows.slice(0, 12).map(function (r, i) {
       return '<button type="button" data-i="' + i + '">Partida ' + partidaTexto(r[0]) + " · " + esc(nomTexto(r)) + " · zona " + esc(D.zonas[r[8]] || "sin asignar") + "</button>";
@@ -59,6 +59,65 @@
     if (r[0]) $("partida").value = r[0];
     pintarFicha(); recalcular();
   }
+  /* ---------- Ida y vuelta a la Consulta Urbanística ---------- */
+  var CLAVE = "estimador-giles-ida";
+  function juntoALaConsulta() { try { return /^https?:$/.test(location.protocol) && /\/estimador\/(index\.html)?$/.test(location.pathname) && window.self === window.top; } catch (e) { return false; } }
+  function urlConsulta() {
+    var base = juntoALaConsulta() ? location.origin + location.pathname.replace(/estimador\/(index\.html)?$/, "") : CFG.enlaces.cou;
+    return base + "?estimador=1" + (parcela && parcela[0] ? "#p=" + parcela[0] : "");
+  }
+  function guardarEstado() {
+    try {
+      var campos = {};
+      Array.prototype.forEach.call($("form").querySelectorAll("input[id],select[id],textarea[id]"), function (el) {
+        if (el.type === "file" || el.closest("#partes") || el.closest("#pdf-campos")) return;
+        campos[el.id] = el.type === "checkbox" || el.type === "radio" ? el.checked : el.value;
+      });
+      sessionStorage.setItem(CLAVE, JSON.stringify({ t: Date.now(), partes: partes, seq: seq, viv: viv, parcela: parcela, campos: campos }));
+    } catch (e) { /* sin almacenamiento: se vuelve con la parcela, pero hay que recargar la obra */ }
+  }
+  function restaurarEstado() {
+    var s = null;
+    try { s = JSON.parse(sessionStorage.getItem(CLAVE) || "null"); sessionStorage.removeItem(CLAVE); } catch (e) { s = null; }
+    if (!s || !Array.isArray(s.partes) || !(Date.now() - s.t < 12 * 3600e3)) return false;
+    partes = s.partes; seq = Math.max(s.seq || 0, partes.reduce(function (m, x) { return Math.max(m, x.id || 0); }, 0)); viv = s.viv || {};
+    parcela = Array.isArray(s.parcela) ? s.parcela : null;
+    Object.keys(s.campos || {}).forEach(function (id) {
+      var el = $(id); if (!el) return;
+      if (el.type === "checkbox" || el.type === "radio") el.checked = !!s.campos[id]; else el.value = s.campos[id];
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-viv]"), function (el) { el.checked = !!viv[el.dataset.viv]; });
+    pintarPartes(); pintarFicha(); recalcular();
+    return true;
+  }
+  /* La Consulta devuelve partida, nomenclatura, zona y superficie de la parcela elegida. */
+  function recibirDeConsulta(Q) {
+    var p = Number(Q.get("p")) || 0, n = (Q.get("n") || "").split("|"), z = Q.get("z") || "", s = Number(Q.get("s")) || 0, fila = null;
+    var conNomen = n.some(Boolean), msg = $("msg-parcela");
+    if (D && (p || conNomen || z)) {
+      var dif = function (r) { return (D.zonas[r[8]] === z ? 0 : 1e9) + Math.abs((r[9] || 0) - s); };
+      var c = D.parcelas.filter(function (r) {
+        if ((r[0] || 0) !== p) return false;
+        for (var i = 0; i < 7; i++) if (String(r[1 + i] || "") !== String(n[i] || "")) return false;
+        return true;
+      }).sort(function (a, b) { return dif(a) - dif(b); });
+      if (c.length && (p || conNomen || dif(c[0]) < 0.11)) fila = c[0];
+    }
+    irTab("inicio"); listar([]);
+    if (fila) {
+      elegir(fila);
+      mensaje("msg-parcela", "Parcela traída de la Consulta Urbanística: " + (fila[0] ? "partida " + partidaTexto(fila[0]) + " · " : "") + nomTexto(fila) + ". Zona, superficie e indicadores ya están cargados.");
+      msg.classList.add("traida");
+    } else if (D && z) {
+      parcela = null; $("zona").value = D.mapa[z] || ""; if (s) $("terreno").value = Math.round(s * 10) / 10; $("partida").value = p || "";
+      pintarFicha(); recalcular();
+      mensaje("msg-parcela", "Se tomaron de la Consulta Urbanística la zona " + z + " y la superficie del terreno. Esa parcela todavía no figura en la base de esta planilla: revisá los datos.");
+      msg.classList.add("traida");
+    }
+    try { history.replaceState(null, "", location.pathname + location.search); } catch (e) { /* queda el enlace como vino */ }
+    if (fila || z) { var h = $("h-parcela"); if (h && h.scrollIntoView) h.scrollIntoView({ block: "start" }); }
+  }
+
   function fichaActual() { return D && $("zona").value ? D.fichas[$("zona").value] : null; }
   function pintarFicha() {
     var f = fichaActual(), h = "";
@@ -584,6 +643,7 @@
   }
   function leerHash() {
     var h = (location.hash || "").replace("#", ""), mp = h.match(/^p-?(\d+)$/);
+    if (/(^|&)desde=consulta(&|$)/.test(h)) { var Q = null; try { Q = new URLSearchParams(h); } catch (e) { Q = null; } if (Q) recibirDeConsulta(Q); return; }
     if (mp && D) { $("partida").value = mp[1]; irTab("inicio"); buscarPartida(); }
     else if ({ inicio: 1, plano: 1, detalle: 1 }[h]) irTab(h);
   }
@@ -596,6 +656,7 @@
       '<span class="dato">revisado el <b>' + CFG.actualizado + "</b></span>";
     if (primera) {
     $("lnk-cou").href = CFG.enlaces.cou;
+    if (!juntoALaConsulta()) { $("ir-mapa").target = "_blank"; $("ir-mapa").rel = "noopener"; }
     $("g-valorviaje").value = Math.round(C.medioDiaViajeFC * FC);
     $("g-preciom2").value = CFG.ploteo.precioM2; $("g-copias").value = CFG.ploteo.copias;
     $("g-formato").innerHTML = Object.keys(CFG.ploteo.formatos).map(function (k) { return '<option value="' + k + '"' + (k === CFG.ploteo.formato ? " selected" : "") + ">" + k + " · " + dec.format(CFG.ploteo.formatos[k]) + " m²</option>"; }).join("");
@@ -701,6 +762,8 @@
   $("buscar-partida").addEventListener("click", buscarPartida);
   $("partida").addEventListener("keydown", function (ev) { if (ev.key === "Enter") { ev.preventDefault(); buscarPartida(); } });
   $("buscar-nomen").addEventListener("click", buscarNomen);
+  $("ir-mapa").href = urlConsulta();
+  $("ir-mapa").addEventListener("click", function () { this.href = urlConsulta(); if (juntoALaConsulta()) guardarEstado(); });
   $("res-parcela").addEventListener("click", function (ev) { var b = ev.target.closest("button"); if (b) elegir($("res-parcela")._rows[Number(b.dataset.i)]); });
   document.querySelectorAll(".tab").forEach(function (b) { b.addEventListener("click", function () { irTab(b.dataset.tab); }); });
   $("liquidacion").addEventListener("click", function (ev) { var b = ev.target.closest("[data-ir]"); if (b) irTab(b.dataset.ir, true); });
@@ -724,6 +787,7 @@
 
   pintarFijos();
   cargarEjemplo("nueva");
+  restaurarEstado();
   leerHash();
   if (window.fetch) verificarValores(false);
 })();

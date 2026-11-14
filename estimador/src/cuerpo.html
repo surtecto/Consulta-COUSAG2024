@@ -26,11 +26,13 @@
 
         <section class="bloque" aria-labelledby="h-parcela">
           <h2 id="h-parcela"><span class="paso">1</span>Tu parcela</h2>
-          <p class="ayuda">Con la partida, la planilla toma la zona, la superficie del terreno y los indicadores del Código. Si no la sabés, ubicá tu parcela en el mapa de <a id="lnk-cou" href="#">Consulta Urbanística Giles</a> y copiá el número.</p>
+          <p class="ayuda">Con la parcela, la planilla toma la zona, la superficie del terreno y los indicadores del Código. Escribí la partida o elegila en el plano.</p>
           <div class="buscar">
             <div class="campo"><label for="partida">Partida municipal</label><input type="text" id="partida" inputmode="numeric" autocomplete="off" placeholder="Por ejemplo, 6510"></div>
             <button type="button" class="btn chico" id="buscar-partida">Buscar</button>
+            <a class="btn sec chico" id="ir-mapa" href="#">Elegir en el plano</a>
           </div>
+          <p class="ayuda" id="ayuda-mapa">«Elegir en el plano» abre la <a id="lnk-cou" href="#">Consulta Urbanística Giles</a>: buscás tu parcela en el mapa, por partida o por nomenclatura, y un botón te trae de vuelta con los datos cargados, sin perder lo que ya completaste acá.</p>
           <details class="mas" id="det-nomen">
             <summary>Buscar por nomenclatura catastral</summary>
             <div class="nomen">

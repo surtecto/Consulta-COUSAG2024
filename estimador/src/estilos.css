@@ -315,3 +315,7 @@ details.mas[open] summary{margin-bottom:10px}
 .btn:disabled{opacity:.7;cursor:progress;transform:none}
 .encuadre .uso{border-top:1px dashed var(--linea);padding-top:6px}
 .encuadre .linea2.uso select{flex:1 1 260px}
+
+/* Ida y vuelta a la Consulta */
+a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.msg.traida{border-left:4px solid var(--verde);background:color-mix(in srgb,var(--verde) 10%,transparent);color:var(--tinta)}
