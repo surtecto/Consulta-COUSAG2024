@@ -319,3 +319,15 @@ details.mas[open] summary{margin-bottom:10px}
 /* Ida y vuelta a la Consulta */
 a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
 .msg.traida{border-left:4px solid var(--verde);background:color-mix(in srgb,var(--verde) 10%,transparent);color:var(--tinta)}
+
+/* Alcance del honorario: tarea completa del profesional, no solo el trámite */
+.alcance{margin:.2rem 0 .9rem;padding:.75rem .85rem;border-radius:10px;background:rgba(240,130,56,.13);border-left:4px solid var(--sol);font-size:.9rem;line-height:1.4}
+.alcance p{margin:0 0 .55rem}
+.alcance b{color:#FFC08A}
+.alcance dl{margin:0;display:grid;gap:.3rem}
+.alcance dl div{display:flex;justify-content:space-between;gap:.8rem;align-items:baseline}
+.alcance dt{margin:0;opacity:.9}
+.alcance dd{margin:0;font-family:var(--mono,ui-monospace,monospace);font-weight:700;white-space:nowrap}
+.renglon.alc .con{font-size:.88rem;line-height:1.4}
+.renglon.alc .con b{color:#FFC08A}
+@media print{.alcance{background:none;border:1px solid #999;border-left:4px solid #999}.alcance b,.renglon.alc .con b{color:inherit}}

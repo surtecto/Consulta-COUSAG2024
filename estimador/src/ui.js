@@ -357,18 +357,34 @@
       (mu.usoProhibido ? "Para una actividad que funciona donde la zonificación no la admite, de " + modulos(mu.usoProhibido) + " (art. 100). " : "") +
       "Las multas se fijan en módulos municipales y cuántos corresponden lo decide el Juez de Faltas." + (CFG.faltas.modulo ? " Valor del módulo: " + P(CFG.faltas.modulo) + "." : "");
   }
+  /* Qué paga el honorario: en obra a construir es toda la tarea del profesional, no solo el trámite. */
+  function alcanceHonorario(e, r) {
+    var nueva = r.sup.construir > 0 && (e.proyecto || e.direccion), existe = r.sup.existente > 0;
+    if (!nueva && !existe) return null;
+    var tareas = e.proyecto && e.direccion ? "el proyecto y la dirección de la obra" : e.proyecto ? "el proyecto completo (anteproyecto, planos y documentación), sin la dirección de la obra" : "la dirección de la obra";
+    var modo = !e.direccion ? "" : e.modalidad === "separados" ? ", con la ejecución contratada por gremios separados" : e.modalidad === "administracion" ? ", con la obra ejecutada por administración a cargo del profesional" : ", con la ejecución a cargo de una empresa constructora";
+    var loExistente = "la medición, los planos y el informe técnico";
+    return {
+      nueva: nueva,
+      corto: !nueva ? "" : e.proyecto && e.direccion ? "con proyecto y dirección de obra" : e.proyecto ? "con proyecto" : "con dirección de obra",
+      titular: !nueva ? "" : e.proyecto && e.direccion ? "el proyecto y la dirección de toda la obra" : e.proyecto ? "el proyecto completo de la obra" : "la dirección de toda la obra",
+      largo: nueva ? "En la obra a construir, este honorario paga toda la tarea del profesional: " + tareas + modo + ". No es solo armar y presentar el expediente." + (existe ? " En lo ya construido paga " + loExistente + "." : "")
+        : "Este honorario paga " + loExistente + " de lo ya construido."
+    };
+  }
   function pintarPanel() {
     if (!ultimo) return;
     var r = ultimo.r, e = ultimo.e, V = ultimo.V, h = r.honorarios, c = r.colegio, m = r.municipio, g = r.gastos, M = CFG.municipio, C = CFG.colegio;
     var det = tab === "detalle";
     if (r.supTotal <= 0) {
-      animarTotal(0); $("o-sub").textContent = ""; Array.prototype.forEach.call($("o-compo").children, function (sp) { sp.style.width = "0"; });
+      animarTotal(0); $("o-sub").textContent = ""; $("o-alcance").hidden = true; $("o-barra-r").textContent = "Total estimado ≈"; Array.prototype.forEach.call($("o-compo").children, function (sp) { sp.style.width = "0"; });
       $("o-grupos").innerHTML = '<p class="vacio">Cargá qué es y la superficie de al menos una parte para ver la estimación.</p>';
       $("o-cou").innerHTML = ""; $("o-fuera").innerHTML = ""; $("o-supuestos").innerHTML = ""; return;
     }
-    var G = [], f;
+    var G = [], f, alc = alcanceHonorario(e, r);
     // Honorarios
     f = [];
+    if (alc) f.push('<div class="renglon alc"><span class="con">' + esc(alc.largo) + "</span></div>");
     if (det) {
       if (h.proyecto) f.push(renglon("Proyecto", P(h.proyecto)));
       if (h.direccion) f.push(renglon("Dirección de obra", P(h.direccion)));
@@ -417,6 +433,13 @@
     if (r.sup.existente) d2.push(dec.format(r.sup.existente) + " m² a declarar");
     if (r.sup.demoler) d2.push(dec.format(r.sup.demoler) + " m² a demoler");
     $("o-sub").textContent = d2.join(" · ") + ". Equivale a " + P(r.total / r.supTotal) + " por m². No incluye multas.";
+    var oa = $("o-alcance");
+    if (alc && alc.nueva && h.total > 0) {
+      oa.innerHTML = "<p><b>No es solo el trámite del expediente.</b> El total incluye el honorario por " + esc(alc.titular) + ".</p>" +
+        "<dl><div><dt>Tarea del profesional</dt><dd>" + P(h.total) + "</dd></div><div><dt>Colegio, Caja, Municipalidad y gastos</dt><dd>" + P(r.total - h.total) + "</dd></div></dl>";
+      oa.hidden = false;
+    } else oa.hidden = true;
+    $("o-barra-r").textContent = "Total estimado ≈" + (alc && alc.corto ? " · " + alc.corto : "");
 
     // Código y multa
     var hc = "";
@@ -471,6 +494,7 @@
     if (R.decl) L.push("- Ya declarado con plano aprobado: " + dec.format(R.decl) + " m²");
     L.push("");
     L.push("HONORARIOS MÍNIMOS DE REFERENCIA: " + P(h.total));
+    var alc = alcanceHonorario(e, r); if (alc) L.push("  " + alc.largo);
     [["Proyecto", h.proyecto], ["Dirección de obra", h.direccion], ["Suplemento de dirección", h.suplemento], ["Medición y planos", h.medicion], ["Informe técnico", h.informe], ["Demolición", h.demolicion], ["Ajuste al mínimo", h.ajusteMinimo]]
       .forEach(function (x) { if (x[1]) L.push("  " + x[0] + ": " + P(x[1])); });
     L.push("COLEGIO Y CAJA: " + P(r.colegioSumado) + (e.incluidos ? " (CEP y aporte incluidos en el honorario)" : ""));
@@ -681,6 +705,7 @@
       "<p>La superficie computable es la cubierta más la mitad de la semicubierta. El coeficiente sale de la tabla de categorías de obra del Colegio. La vivienda unifamiliar va de la categoría A (ningún ítem) a la E (cuatro o más) según ocho características; si la única que cumple es estar en una urbanización privada, pasa a la C.</p></article>" +
 
       "<article><h3>2. Honorarios por obra a construir</h3>" +
+      "<p><b>Este honorario es por la tarea completa del profesional</b>: proyectar la obra y dirigirla hasta el final, según cómo se contrate la ejecución. No es el costo de armar y presentar el expediente, que es solo una parte de ese trabajo.</p>" +
       "<p>Proyecto y dirección se calculan por tramos sobre el valor referencial: cada tramo aporta su porcentaje y se suman.</p>" +
       '<div class="tabla"><table><thead><tr><th>Tramo del valor referencial</th><th class="n">Honorario</th></tr></thead><tbody>' + filasPD + "</tbody></table></div>" +
       "<p>De ese total, el proyecto es el " + pct(C.proyecto) + " y la dirección el " + pct(C.direccion) + ". La dirección suma un " + pct(C.suplSeparados) + " por contratos separados o un " + pct(C.suplAdministracion) + " por administración. Mínimo para cualquier tarea: " + P(C.minTareaFC * FC) + ".</p></article>" +
