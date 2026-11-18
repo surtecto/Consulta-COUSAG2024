@@ -1,6 +1,6 @@
 {
   "_nota": "Valores vigentes del Estimador. La web lee este archivo al abrir y cuando se toca «Verificar valores actualizados». Una verificación automática semanal (GitHub Actions) consulta el Digesto y el sitio del Colegio y lo actualiza; también se puede editar a mano. Ver LEEME.md.",
-  "verificado": "2026-11-16",
+  "verificado": "2026-11-18",
   "colegio": {
     "UR": 1518000,
     "vigenciaUR": "01/04/2026",
@@ -42,12 +42,12 @@
   "revisadoHasta": {},
   "consultas": {
     "digesto": {
-      "fecha": "2026-11-16",
+      "fecha": "2026-11-18",
       "ok": true,
       "detalle": "El Digesto no registra una Ordenanza Impositiva ni un Código de Faltas posteriores a los cargados."
     },
     "colegio": {
-      "fecha": "2026-11-16",
+      "fecha": "2026-11-18",
       "ok": true,
       "detalle": "El sitio del Colegio sigue publicando $ 1.518.000 por m²."
     }
